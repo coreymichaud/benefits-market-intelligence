@@ -14,3 +14,6 @@ data/
 
 # VSCode configurations
 .vscode/
+
+# Mac 
+.DS_Store
