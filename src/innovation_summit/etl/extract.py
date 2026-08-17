@@ -4,18 +4,18 @@ from pathlib import Path
 from innovation_summit.config import RAW_DATA_PATH
 
 files = {
-    "F_5500": ("Form 5500", range(2019, 2025)),
-    "F_SCH_A": ("Form 5500 Schedule A", range(2019, 2025)),
-    "F_SCH_C_PART1_ITEM2": ("Form 5500 Schedule C Part 1, Item 2", range(2019, 2026)),
+    "F_5500": "Form 5500",
+    "F_SCH_A": "Form 5500 Schedule A",
+    "F_SCH_C_PART1_ITEM2": "Form 5500 Schedule C Part 1, Item 2",
 }
 
-for name, (folder, years) in files.items():
+for name, folder in files.items():
     folder_path = RAW_DATA_PATH / folder
     folder_path.mkdir(parents=True, exist_ok=True)
 
     print(f"[DOWNLOADING] {folder} from DOL EFAST...")
 
-    for year in years:
+    for year in range(2019, 2025):
         stem = f"{name}_{year}_Latest"
         url = f"https://askebsa.dol.gov/FOIA%20Files/{year}/Latest/{stem}.zip"
 
