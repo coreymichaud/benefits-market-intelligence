@@ -203,7 +203,6 @@ SCH_C_P1_I2_21 = pd.read_csv(SCH_C_P1_I2_PATH / "F_SCH_C_PART1_ITEM2_2021_Latest
 SCH_C_P1_I2_22 = pd.read_csv(SCH_C_P1_I2_PATH / "F_SCH_C_PART1_ITEM2_2022_Latest/F_SCH_C_PART1_ITEM2_2022_Latest.csv", dtype=dtypes)
 SCH_C_P1_I2_23 = pd.read_csv(SCH_C_P1_I2_PATH / "F_SCH_C_PART1_ITEM2_2023_Latest/F_SCH_C_PART1_ITEM2_2023_Latest.csv", dtype=dtypes)
 SCH_C_P1_I2_24 = pd.read_csv(SCH_C_P1_I2_PATH / "F_SCH_C_PART1_ITEM2_2024_Latest/F_SCH_C_PART1_ITEM2_2024_Latest.csv", dtype=dtypes)
-SCH_C_P1_I2_25 = pd.read_csv(SCH_C_P1_I2_PATH / "F_SCH_C_PART1_ITEM2_2025_Latest/F_SCH_C_PART1_ITEM2_2025_Latest.csv", dtype=dtypes)
 
 # Add the year this data was given
 SCH_C_P1_I2_19["FORM_YEAR"] = "2019"
@@ -212,10 +211,9 @@ SCH_C_P1_I2_21["FORM_YEAR"] = "2021"
 SCH_C_P1_I2_22["FORM_YEAR"] = "2022"
 SCH_C_P1_I2_23["FORM_YEAR"] = "2023"
 SCH_C_P1_I2_24["FORM_YEAR"] = "2024"
-SCH_C_P1_I2_25["FORM_YEAR"] = "2025"
 
 # Concatenate all dataframes into one for ease of use
-SCH_C_P1_I2 = pd.concat([SCH_C_P1_I2_19, SCH_C_P1_I2_20, SCH_C_P1_I2_21, SCH_C_P1_I2_22, SCH_C_P1_I2_23, SCH_C_P1_I2_24, SCH_C_P1_I2_25], ignore_index=True)
+SCH_C_P1_I2 = pd.concat([SCH_C_P1_I2_19, SCH_C_P1_I2_20, SCH_C_P1_I2_21, SCH_C_P1_I2_22, SCH_C_P1_I2_23, SCH_C_P1_I2_24], ignore_index=True)
 
 print(f"[SUCCESSFUL] Rows: {SCH_C_P1_I2.shape[0]} & Columns: {SCH_C_P1_I2.shape[1]}")
 
