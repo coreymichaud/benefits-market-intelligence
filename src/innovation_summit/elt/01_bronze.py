@@ -3,7 +3,7 @@ import zipfile
 import duckdb
 import requests
 
-from innovation_summit.config import DB_PATH, RAW_DATA_PATH
+from innovation_summit.config.paths import DB_PATH, RAW_DATA_PATH
 
 
 files = {

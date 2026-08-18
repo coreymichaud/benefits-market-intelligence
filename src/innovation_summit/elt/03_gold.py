@@ -1,7 +1,6 @@
 # TEMPORARY! This is just for testing for now.
 import duckdb
-
-from innovation_summit.config import DB_PATH
+from innovation_summit.config.paths import DB_PATH
 
 
 with duckdb.connect(DB_PATH) as con:
