@@ -1,10 +1,6 @@
 # !!! WIP !!!
 If you're reading this, this is a huge WIP! Come back soon!
 
-# Deloitte Human Capital Analytics CoP Innovation Summit 2026
-
-talk here
-
 ## Overview
 
 do an overview with what we want to get from the data (https://www.youtube.com/watch?v=WynNSOUXSo8&t=398s)
