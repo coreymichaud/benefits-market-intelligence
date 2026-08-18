@@ -1,4 +1,7 @@
-.PHONY: help install data-extract data-combine data all
+.PHONY: help install data-bronze data-silver data all
+
+
+# ============ MISC COMMANDS ============
 
 help:  # Shows a help message, and is the default `make` target
 	@echo "Usage: make [target]"
@@ -6,20 +9,28 @@ help:  # Shows a help message, and is the default `make` target
 	@echo "Targets:"
 	@echo "  help             Shows this help message"
 	@echo "  install          Syncs the environment"
-	@echo "  data-extract     Extracts the data from DOL EFAST"
-	@echo "  data-combine     Combines the extracted data"
-	@echo "  data             Runs all data commands"
-	@echo "  all              Runs the full pipeline"
+	@echo "  data-bronze      Extracts the data from DOL EFAST into bronze schema"
+	@echo "  data-silver      Transforms the bronze data into combined, cleaned silver schema"
+	@echo "  data-gold        Transforms the silver data into analytics-ready gold schema"
+	@echo "  data             Runs full data pipeline"
+	@echo "  all              Runs the full analytics pipeline"
 
 install:  # Syncs the environment
 	uv sync
 
-data-extract:  # Extracts the data from DOL EFAST
-	uv run python -m innovation_summit.etl.extract
+# ============ DATA COMMANDS ============
 
-data-combine: data-extract  # Combines the extracted data into separate parquet files
-	uv run python -m innovation_summit.etl.combine
+data-bronze:  # Extracts the data from DOL EFAST into bronze schema
+	uv run python -m innovation_summit.elt.01_bronze
 
-data: data-combine  # Runs all data commands to get the full data pipeline
+data-silver: data-bronze  # Transforms the bronze data into combined, cleaned silver schema
+	uv run python -m innovation_summit.elt.02_silver
 
-all: install data  # Runs the full pipeline
+data-gold: data-silver  # Transforms the silver data into analytics-ready gold schema
+	uv run python -m innovation_summit.elt.03_gold
+
+data: data-gold  # Runs full data pipeline
+
+# ============ FULL PIPELINE COMMAND ============
+
+all: install data  # Runs the full analytics pipeline
