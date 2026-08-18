@@ -1,19 +1,33 @@
-# !!! WIP !!!
-If you're reading this, this is a huge WIP! Come back soon!
+# Title
+
+Description
+
+---
 
 ## Overview
 
-do an overview with what we want to get from the data (https://www.youtube.com/watch?v=WynNSOUXSo8&t=398s)
+We want to create a decision-ready analytics solution that can show information like identifying insurance broker trends and insights, broker growth or decline, commission movement, fee-per-member-patterns,
+carrier concentration, segment presence, and outlier compensation dynamics.
+
+### Key Business Questions Addressed
+
+WIP
 
 ## Key Insights
 
-do this
+WIP
 
 ## Recommendations
 
-what do you recommend
+WIP
+
+---
 
 ## Data Model & Technologies
+
+WIP
+
+---
 
 ## Setup
 
@@ -22,8 +36,3 @@ After cloning the repo and `cd`ing in, run:
 ```
 make all
 ```
-
-## Tips for me delete later pls
-- decision driven
-- look at that one youtube video and make sure that this README is more of a report and not just some project info
-- try to do separators --- between sections and each section should have subsections
