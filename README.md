@@ -6,14 +6,15 @@ Description WIP
 
 ## Overview
 
-We want to create a decision-ready analytics solution that can show information like identifying insurance broker trends and insights, broker growth or decline, commission movement, fee-per-member-patterns,
-carrier concentration, segment presence, and outlier compensation dynamics.
+We created a decision-ready analytics solution that evaluates historical Form 5500 data to identify insurance broker trends and insights.
 
 ## Key Business Questions Addressed
 
 1. WIP
 
 ## Key Insights
+
+WIP
 
 ### Insight description
 
@@ -39,7 +40,7 @@ WIP
 
 ### Prerequisites
 
-It is assumed that you have
+It is assumed that you have:
 
 - Python v3.14
 - `uv` installed
@@ -53,7 +54,7 @@ git clone REPO
 cd REPO
 ```
 
-To run the data pipeline, do:
+Run the ELT data pipeline:
 
 ```
 make all
