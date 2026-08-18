@@ -1,24 +1,32 @@
-# WIP! Not here quite yet. The code below is just to see table names.
-
+# TEMPORARY! This is just for testing for now.
 import duckdb
 
 from innovation_summit.config import DB_PATH
 
 
-with duckdb.connect(DB_PATH, read_only=True) as con:
-    for schema in ["bronze", "silver"]:
-        print(f"\n{schema}")
-        print("-" * len(schema))
+with duckdb.connect(DB_PATH) as con:
 
-        tables = con.execute(
+    con.execute("CREATE SCHEMA IF NOT EXISTS gold")
+
+    tables = con.execute(
+        """
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema = 'silver'
+        ORDER BY table_name
+        """
+    ).fetchall()
+
+    for (table_name,) in tables:
+
+        print(f"[COPYING] silver.{table_name} -> gold.{table_name}")
+
+        con.execute(
+            f"""
+            CREATE OR REPLACE TABLE gold."{table_name}" AS
+            SELECT *
+            FROM silver."{table_name}"
             """
-            SELECT table_name
-            FROM information_schema.tables
-            WHERE table_schema = ?
-            ORDER BY table_name
-            """,
-            [schema],
-        ).fetchall()
+        )
 
-        for (table,) in tables:
-            print(f"  {table}")
+print("[FINISHED] Gold schema successfully created!")

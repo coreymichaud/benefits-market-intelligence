@@ -1,7 +1,9 @@
 import zipfile
+
 import duckdb
 import requests
-from innovation_summit.config import WAREHOUSE_PATH, DB_PATH
+
+from innovation_summit.config import DB_PATH, RAW_DATA_PATH
 
 
 files = {
@@ -10,47 +12,79 @@ files = {
     "F_SCH_C_PART1_ITEM2": "Form 5500 Schedule C Part 1, Item 2",
 }
 
-WAREHOUSE_PATH.mkdir(parents=True, exist_ok=True)
+RAW_DATA_PATH.mkdir(parents=True, exist_ok=True)
 
-# Connect and create DuckDB data warehouse, following B/S/G medallion architecture
+
+# Connect to DuckDB data warehouse
 with duckdb.connect(DB_PATH) as con:
+
+    # Create bronze schema if it doesn't exist
     con.execute("CREATE SCHEMA IF NOT EXISTS bronze")
 
     for name, folder in files.items():
+
+        folder_path = RAW_DATA_PATH / folder
+        folder_path.mkdir(parents=True, exist_ok=True)
+
         print(f"[DOWNLOADING] {folder} from DOL EFAST...")
 
         for year in range(2019, 2025):
+
             stem = f"{name}_{year}_Latest"
 
-            url = f"https://askebsa.dol.gov/FOIA%20Files/{year}/Latest/{stem}.zip"
+            url = (
+                f"https://askebsa.dol.gov/"
+                f"FOIA%20Files/{year}/Latest/{stem}.zip"
+            )
 
-            zip_path = WAREHOUSE_PATH / f"{stem}.zip"
+            zip_path = folder_path / f"{stem}.zip"
+            extract_path = folder_path / stem
 
             print(f"  Downloading {year}...")
 
             response = requests.get(url)
             response.raise_for_status()
+
             zip_path.write_bytes(response.content)
 
-            # Find the CSV inside the ZIP
             with zipfile.ZipFile(zip_path) as z:
+
                 csv_files = [
-                    file for file in z.namelist() if file.lower().endswith(".csv")
+                    file
+                    for file in z.namelist()
+                    if file.lower().endswith(".csv")
                 ]
+
+                if not csv_files:
+                    raise FileNotFoundError(
+                        f"No CSV found in {zip_path}"
+                    )
+
+                if len(csv_files) > 1:
+                    raise ValueError(
+                        f"Multiple CSV files found in {zip_path}: "
+                        f"{csv_files}"
+                    )
 
                 csv_name = csv_files[0]
 
-                # Extract only the CSV
-                z.extract(csv_name, WAREHOUSE_PATH)
+                # Create the year-specific folder
+                extract_path.mkdir(
+                    parents=True,
+                    exist_ok=True
+                )
 
-            csv_path = WAREHOUSE_PATH / csv_name
+                # Extract only the CSV into the folder
+                z.extract(csv_name, extract_path)
 
-            # Use the ZIP filename as the DuckDB table name
+            csv_path = extract_path / csv_name
+
             table_name = stem
 
-            print(f"  Loading -> bronze.{table_name}")
+            print(
+                f"  Loading -> bronze.{table_name}"
+            )
 
-            # Add data to bronze schema
             con.execute(
                 f"""
                 CREATE OR REPLACE TABLE bronze."{table_name}" AS
@@ -63,8 +97,6 @@ with duckdb.connect(DB_PATH) as con:
                 """
             )
 
-            # Delete the temporary files
-            csv_path.unlink()
             zip_path.unlink()
 
         print(f"[FINISHED] {folder}\n")
