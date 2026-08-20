@@ -54,8 +54,21 @@ git clone REPO
 cd REPO
 ```
 
+### Running pipeline on Apple OS
+
 Run the ELT data pipeline:
 
 ```
 make all
+```
+
+### Running pipeline on Windows
+
+Run the pipeline in order:
+
+```
+uv sync
+uv run src/innovation_summit/elt/01_bronze.py
+uv run src/innovation_summit/elt/02_silver.py
+uv run src/innovation_summit/elt/03_gold.py
 ```
