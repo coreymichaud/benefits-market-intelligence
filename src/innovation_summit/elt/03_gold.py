@@ -4,7 +4,6 @@ from innovation_summit.config.paths import DB_PATH
 
 
 with duckdb.connect(DB_PATH) as con:
-
     con.execute("CREATE SCHEMA IF NOT EXISTS gold")
 
     tables = con.execute(
@@ -17,7 +16,6 @@ with duckdb.connect(DB_PATH) as con:
     ).fetchall()
 
     for (table_name,) in tables:
-
         print(f"[COPYING] silver.{table_name} -> gold.{table_name}")
 
         con.execute(
