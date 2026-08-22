@@ -29,7 +29,7 @@ The Main form is the annual filing required of most retirement and welfare benef
 
 - **Plan identification:** plan name, three-digit plan number, and the sponsor's Employer Identification Number (EIN)
 - **Sponsor and administrator details:** legal name, address, and administrator information (if different from the sponsor)
-- **Plan classification::** pension vs. welfare plan, plan features/benefit codes, and funding arrangement
+- **Plan classification:** pension vs. welfare plan, plan features/benefit codes, and funding arrangement
 - **Participant counts:** active participants, retired or separated participants receiving or entitled to benefits, and total covered lives at the start and end of the plan year
 - **Financial summary:** high-level assets, liabilities, contributions, and benefit payments (drawn from the corresponding Schedule H or I, which are not part of this dataset)
 - **Filing metadata:** plan year begin/end dates and a unique acknowledgment ID (ACK ID) assigned by EFAST2 to each filing
