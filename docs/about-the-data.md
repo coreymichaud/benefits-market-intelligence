@@ -21,7 +21,7 @@ This analysis draws on three components of the Form 5500 filing package. Each ha
 | **Schedule A** | Plan provides benefits in whole or in part through an insurance contract | Insurance contract, per plan, per plan year | Carrier, coverage, premiums, commissions/fees paid to agents and brokers |
 | **Schedule C, Part I, Item 2** | "Large" plans (generally 100+ participants at the start of the plan year) that compensate a service provider $5,000 or more | Service provider, per plan, per plan year | Direct and indirect compensation, services rendered, provider relationship to the plan |
 
-A single plan/year can generate multiple Schedule A and Schedule C rows — for example, a plan with medical, dental, and life coverage through three different carriers will file three Schedule As, each potentially listing several commission recipients.
+A single plan/year can generate multiple Schedule A and Schedule C rows. For example, a plan with medical, dental, and life coverage through three different carriers will file three Schedule As, each potentially listing several commission recipients.
 
 ## Form 5500 (Main) — Annual Return/Report
 
@@ -36,7 +36,7 @@ The Main form is the annual filing required of most retirement and welfare benef
 
 ## Schedule A — Insurance Information
 
-Schedule A is filed for each insurance contract a plan uses to provide benefits — common for fully insured medical, dental, vision, life, disability, and stop-loss arrangements. It discloses:
+Schedule A is filed for each insurance contract a plan uses to provide benefits. This is common for fully insured medical, dental, vision, life, disability, and stop-loss arrangements. It discloses:
 
 - **Carrier and contract details:** insurance company name, NAIC code, and contract/policy number
 - **Coverage particulars:** type of benefit, policy period, and approximate number of persons covered
