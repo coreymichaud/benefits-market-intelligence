@@ -59,7 +59,7 @@ with duckdb.connect(DB_PATH) as con:
                 # Create the year-specific folder
                 extract_path.mkdir(parents=True, exist_ok=True)
 
-                # Extract everything (CSV + layouts.txt, etc.) into the folder
+                # Extract everything into the folder
                 z.extractall(extract_path)
 
             csv_path = extract_path / csv_name
