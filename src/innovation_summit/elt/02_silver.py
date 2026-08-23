@@ -260,7 +260,7 @@ with duckdb.connect(DB_PATH) as con:
         """
     ).fetchone()[0]
 
-    print(f"[SUCCESSFUL] SCH_C_P1_I2: {sch_c_rows:,} rows × {sch_c_columns} columns")
+    print(f"[SUCCESSFUL] SCH_C_P1_I2: {sch_c_rows:,} rows x {sch_c_columns} columns")
 
 
 print("[FINISHED] Silver tables successfully created!")
