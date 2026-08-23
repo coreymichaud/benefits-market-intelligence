@@ -18,6 +18,7 @@ help:  # Shows a help message, and is the default `make` target
 install:  # Syncs the environment
 	uv sync
 
+
 # ============ DATA COMMANDS ============
 
 data-bronze:  # Extracts the data from DOL EFAST into bronze schema
@@ -30,6 +31,7 @@ data-gold: data-silver  # Transforms the silver data into analytics-ready gold s
 	uv run python -m innovation_summit.elt.03_gold
 
 data: data-gold  # Runs full data pipeline
+
 
 # ============ FULL PIPELINE COMMAND ============
 
