@@ -3,7 +3,7 @@ import zipfile
 import duckdb
 import requests
 
-from innovation_summit.config.paths import DB_PATH, RAW_DATA_PATH, WAREHOUSE_PATH
+from innovation_summit.config.paths import DB_PATH, RAW_DATA_PATH, PROCESSED_PATH
 
 
 files = {
@@ -13,7 +13,7 @@ files = {
 }
 
 RAW_DATA_PATH.mkdir(parents=True, exist_ok=True)
-WAREHOUSE_PATH.mkdir(parents=True, exist_ok=True)
+PROCESSED_PATH.mkdir(parents=True, exist_ok=True)
 
 # Connect to DuckDB data warehouse
 with duckdb.connect(DB_PATH) as con:
