@@ -15,7 +15,7 @@ At its core, each Form 5500 filing identifies who sponsors a benefit plan, what 
 
 This analysis draws on three components of the Form 5500 filing package. Each has a different filing trigger and a different grain (unit of record), summarized below:
 
-| Component | Required When | Grain (One Row Per) | Primarily Captures |
+| Component | Required When | Grain | Primarily Captures |
 |---|---|---|---|
 | **Form 5500 (Main)** | All ERISA-covered pension and welfare plans filing the full form (as opposed to the abbreviated 5500-SF) | Plan, per plan year | Sponsor, plan type, participant counts, financial summary |
 | **Schedule A** | Plan provides benefits in whole or in part through an insurance contract | Insurance contract, per plan, per plan year | Carrier, coverage, premiums, commissions/fees paid to agents and brokers |
