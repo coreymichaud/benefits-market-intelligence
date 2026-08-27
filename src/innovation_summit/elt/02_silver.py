@@ -187,6 +187,7 @@ def create_silver_table(
 print("[STARTING] Silver transformation...")
 
 with duckdb.connect(DB_PATH) as con:
+
     # Create silver schema
     con.execute("CREATE SCHEMA IF NOT EXISTS silver")
 

@@ -12,6 +12,7 @@ files = {
     "F_SCH_C_PART1_ITEM2": "Form 5500 Schedule C Part 1, Item 2",
 }
 
+# Create `raw/` and `processed/` paths
 RAW_DATA_PATH.mkdir(parents=True, exist_ok=True)
 PROCESSED_PATH.mkdir(parents=True, exist_ok=True)
 
