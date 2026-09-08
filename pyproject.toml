@@ -1,7 +1,7 @@
 [project]
 name = "benefits-market-intelligence"
 version = "0.1.0"
-description = "Data-driven analysis of Form 5500 filings to uncover employer benefits trends and actionable market insights for benefits brokers."
+description = "Analysis of Form 5500 filings to surface employer benefits trends and market insights for benefits brokers."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
