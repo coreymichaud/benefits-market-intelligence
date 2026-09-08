@@ -1,5 +1,5 @@
 import duckdb
-from innovation_summit.config.paths import DB_PATH
+from benefits_market_intelligence.config.paths import DB_PATH
 
 # Column definitions from the layout.txt file packaged with the data from DOL EFAST
 F_5500_NUMERIC_COLS = [

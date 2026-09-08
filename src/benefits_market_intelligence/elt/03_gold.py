@@ -1,5 +1,5 @@
 import duckdb
-from innovation_summit.config.paths import DB_PATH, EXPORTS_PATH
+from benefits_market_intelligence.config.paths import DB_PATH, EXPORTS_PATH
 
 # F_5500 columns to include
 F_5500_top_cols = [
