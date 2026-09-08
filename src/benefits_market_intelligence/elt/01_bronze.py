@@ -3,7 +3,11 @@ import zipfile
 import duckdb
 import requests
 
-from benefits_market_intelligence.config.paths import DB_PATH, RAW_DATA_PATH, PROCESSED_PATH
+from benefits_market_intelligence.config.paths import (
+    DB_PATH,
+    RAW_DATA_PATH,
+    PROCESSED_PATH,
+)
 
 
 files = {

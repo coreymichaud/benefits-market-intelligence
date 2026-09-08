@@ -25,7 +25,7 @@ F_5500_top_cols = [
     "SCH_G_ATTACHED_IND",
     "SCH_DCG_ATTACHED_IND",
     "SCH_MEP_ATTACHED_IND",
-    "FORM_YEAR"
+    "FORM_YEAR",
 ]
 
 # SCH_A columns to include
@@ -56,7 +56,7 @@ SCH_A_top_cols = [
     "INS_BROKER_COMM_TOT_AMT",
     "INS_BROKER_FEES_TOT_AMT",
     "INS_PRSN_COVERED_EOY_CNT",
-    "FORM_YEAR"
+    "FORM_YEAR",
 ]
 
 # SCH_C_P1_I2 columns to include
@@ -69,14 +69,14 @@ SCH_C_P1_I2_top_cols = [
     "PROVIDER_OTHER_DIRECT_COMP_AMT",
     "PROV_OTHER_INDIRECT_COMP_IND",
     "PROV_OTHER_TOT_IND_COMP_AMT",
-    "FORM_YEAR"
+    "FORM_YEAR",
 ]
 
 # Mapping of tables to their top columns
 tables_tcols = {
     "F_5500": F_5500_top_cols,
     "SCH_A": SCH_A_top_cols,
-    "SCH_C_P1_I2": SCH_C_P1_I2_top_cols
+    "SCH_C_P1_I2": SCH_C_P1_I2_top_cols,
 }
 
 
@@ -85,16 +85,18 @@ with duckdb.connect(DB_PATH) as con:
 
     for table, columns in tables_tcols.items():
         con.execute(
-        f"""
+            f"""
         CREATE OR REPLACE TABLE gold.{table} AS
-        SELECT {', '.join(columns)}
+        SELECT {", ".join(columns)}
         FROM silver.{table};
         """
         )
 
         # Saving exports to share
         EXPORTS_PATH.mkdir(parents=True, exist_ok=True)
-        con.execute(f"COPY gold.{table} TO '{EXPORTS_PATH / table}.parquet' (FORMAT PARQUET);")
+        con.execute(
+            f"COPY gold.{table} TO '{EXPORTS_PATH / table}.parquet' (FORMAT PARQUET);"
+        )
 
 
 print("[FINISHED] Gold schema successfully created!")
