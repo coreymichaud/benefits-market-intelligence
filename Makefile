@@ -22,13 +22,13 @@ install:  # Syncs the environment
 # ============ DATA COMMANDS ============
 
 data-bronze:  # Extracts the data from DOL EFAST into bronze schema
-	uv run python -m innovation_summit.elt.01_bronze
+	uv run python -m benefits_market_intelligence.elt.01_bronze
 
 data-silver: data-bronze  # Transforms the bronze data into combined, cleaned silver schema
-	uv run python -m innovation_summit.elt.02_silver
+	uv run python -m benefits_market_intelligence.elt.02_silver
 
 data-gold: data-silver  # Transforms the silver data into analytics-ready gold schema
-	uv run python -m innovation_summit.elt.03_gold
+	uv run python -m benefits_market_intelligence.elt.03_gold
 
 data: data-gold  # Runs full data pipeline
 
