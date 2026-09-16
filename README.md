@@ -68,7 +68,7 @@ Run the pipeline in order:
 
 ```
 uv sync
-uv run src/innovation_summit/elt/01_bronze.py
-uv run src/innovation_summit/elt/02_silver.py
-uv run src/innovation_summit/elt/03_gold.py
+uv run src/benefits_market_intelligence/elt/01_bronze.py
+uv run src/benefits_market_intelligence/elt/02_silver.py
+uv run src/benefits_market_intelligence/elt/03_gold.py
 ```
