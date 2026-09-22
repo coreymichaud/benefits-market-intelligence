@@ -1,16 +1,5 @@
 # Benefits Market Intelligence
 
-**A decision-ready analytics pipeline that mines six years of Form 5500 filings to surface broker, carrier, and compensation trends in the employer benefits market.**
-
-[![Python](https://img.shields.io/badge/python-3.14-blue.svg)](https://www.python.org/)
-[![DuckDB](https://img.shields.io/badge/warehouse-DuckDB-yellow.svg)](https://duckdb.org/)
-[![uv](https://img.shields.io/badge/env-uv-6E56CF.svg)](https://github.com/astral-sh/uv)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-
----
-
-## Overview
-
 Every year, employer-sponsored benefit plans disclose who insures them, who gets paid to place and service those plans, and how much changes hands, all through the Department of Labor's **Form 5500** filings. That data is public, but it's scattered across millions of rows, multiple schedules, and inconsistent formats, which makes it impractical for a broker, carrier, or analyst to use as-is.
 
 This project builds an end-to-end pipeline that turns raw Form 5500 filings (2019–2024) into an analytics-ready dataset, then mines it for **broker leaderboards, carrier market share, compensation trends, and plan-level economics**, the kind of market intelligence benefits brokers and consultants would otherwise pay a data vendor for.
