@@ -1,6 +1,7 @@
 from plotly.graph_objects import Figure
 from pathlib import Path
 
+
 def save_figure(fig: Figure, name: str, path: Path) -> None:
     """
     Save a Plotly figure as a PNG image.
