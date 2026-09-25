@@ -1,13 +1,12 @@
 import warnings
 
-import duckdb
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
-from benefits_market_intelligence.config.paths import DB_PATH
+from benefits_market_intelligence.config.paths import EXPORTS_PATH
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
@@ -22,6 +21,7 @@ DARK = "#243447"
 # ---------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------
+
 
 def money(v, decimals=1):
     if pd.isna(v):
@@ -97,24 +97,19 @@ def clean_text(s, fallback="Not reported"):
 
 
 def yes_flag(series):
-    return (
-        series
-        .astype("string")
-        .str.upper()
-        .isin(["1", "Y", "YES", "TRUE", "X"])
-    )
+    return series.astype("string").str.upper().isin(["1", "Y", "YES", "TRUE", "X"])
 
 
 # ---------------------------------------------------------------------
 # Data loading
 # ---------------------------------------------------------------------
 
+
 @st.cache_data(show_spinner=False)
 def load_data():
-    with duckdb.connect(DB_PATH, read_only=True) as con:
-        f_5500 = con.sql("SELECT * FROM gold.F_5500").df()
-        sch_a = con.sql("SELECT * FROM gold.SCH_A").df()
-        sch_c = con.sql("SELECT * FROM gold.SCH_C_P1_I2").df()
+    f_5500 = pd.read_parquet(EXPORTS_PATH / "F_5500.parquet")
+    sch_a = pd.read_parquet(EXPORTS_PATH / "SCH_A.parquet")
+    sch_c = pd.read_parquet(EXPORTS_PATH / "SCH_C_P1_I2.parquet")
 
     f_5500 = num(
         f_5500,
@@ -166,8 +161,7 @@ def load_data():
     )
 
     f_5500["plan_key"] = np.where(
-        (f_5500["SPONS_DFE_EIN"] != "")
-        & (f_5500["SPONS_DFE_PN"] != ""),
+        (f_5500["SPONS_DFE_EIN"] != "") & (f_5500["SPONS_DFE_PN"] != ""),
         f_5500["SPONS_DFE_EIN"] + "|" + f_5500["SPONS_DFE_PN"],
         f_5500["ACK_ID"],
     )
@@ -186,34 +180,25 @@ def load_data():
         sch_a["INS_CARRIER_NAME"],
     )
 
-    plans = (
-        f_5500
-        .drop_duplicates(["plan_key", "FORM_YEAR"])[
-            [
-                "plan_key",
-                "ACK_ID",
-                "FORM_YEAR",
-                "TOT_PARTCP_BOY_CNT",
-                "TOT_ACTIVE_PARTCP_CNT",
-                "BUSINESS_CODE",
-            ]
+    plans = f_5500.drop_duplicates(["plan_key", "FORM_YEAR"])[
+        [
+            "plan_key",
+            "ACK_ID",
+            "FORM_YEAR",
+            "TOT_PARTCP_BOY_CNT",
+            "TOT_ACTIVE_PARTCP_CNT",
+            "BUSINESS_CODE",
         ]
-        .copy()
-    )
+    ].copy()
 
     # Premium concept used in the notebook.
-    sch_a["reported_premium"] = (
-        sch_a["WLFR_PREMIUM_RCVD_AMT"].fillna(0)
-        + sch_a["PENSION_PREM_PAID_TOT_AMT"].fillna(0)
-    )
+    sch_a["reported_premium"] = sch_a["WLFR_PREMIUM_RCVD_AMT"].fillna(0) + sch_a[
+        "PENSION_PREM_PAID_TOT_AMT"
+    ].fillna(0)
 
-    sch_a["commission"] = (
-        sch_a["INS_BROKER_COMM_TOT_AMT"].fillna(0)
-    )
+    sch_a["commission"] = sch_a["INS_BROKER_COMM_TOT_AMT"].fillna(0)
 
-    sch_a["fees"] = (
-        sch_a["INS_BROKER_FEES_TOT_AMT"].fillna(0)
-    )
+    sch_a["fees"] = sch_a["INS_BROKER_FEES_TOT_AMT"].fillna(0)
 
     sch_a["commission_rate"] = np.where(
         sch_a["reported_premium"] > 0,
@@ -221,9 +206,7 @@ def load_data():
         np.nan,
     )
 
-    sch_a["commission_rate_pct"] = (
-        sch_a["commission_rate"] * 100
-    )
+    sch_a["commission_rate_pct"] = sch_a["commission_rate"] * 100
 
     # -------------------------------------------------------------
     # Outlier logic from notebook
@@ -231,22 +214,16 @@ def load_data():
 
     valid = sch_a.copy()
 
-    valid["positive_premium"] = (
-        valid["reported_premium"] > 0
-    )
+    valid["positive_premium"] = valid["reported_premium"] > 0
 
-    valid["nonnegative_commission"] = (
-        valid["commission"] >= 0
-    )
+    valid["nonnegative_commission"] = valid["commission"] >= 0
 
     valid_base = valid[
-        valid["positive_premium"]
-        & valid["nonnegative_commission"]
+        valid["positive_premium"] & valid["nonnegative_commission"]
     ].copy()
 
     fences = (
-        valid_base
-        .groupby("FORM_YEAR")["commission"]
+        valid_base.groupby("FORM_YEAR")["commission"]
         .agg(
             q1=lambda s: s.quantile(0.25),
             q3=lambda s: s.quantile(0.75),
@@ -264,84 +241,58 @@ def load_data():
         how="left",
     )
 
-    valid["distribution_outlier"] = (
-        valid["commission"] > valid["fence"]
+    valid["distribution_outlier"] = valid["commission"] > valid["fence"]
+
+    valid["invalid_premium_base"] = (valid["reported_premium"] <= 0) & (
+        valid["commission"] != 0
     )
 
-    valid["invalid_premium_base"] = (
-        (valid["reported_premium"] <= 0)
-        & (valid["commission"] != 0)
-    )
-
-    valid["suspect"] = (
-        valid["distribution_outlier"]
-        | valid["invalid_premium_base"]
-    )
+    valid["suspect"] = valid["distribution_outlier"] | valid["invalid_premium_base"]
 
     valid_base = valid[
-        valid["positive_premium"]
-        & valid["nonnegative_commission"]
+        valid["positive_premium"] & valid["nonnegative_commission"]
     ].copy()
 
     # Plan/year aggregation.
-    plan_contracts = (
-        valid_base
-        .groupby(
-            ["ACK_ID", "FORM_YEAR"],
-            as_index=False,
-        )
-        .agg(
-            reported_premium=("reported_premium", "sum"),
-            reported_commission=("commission", "sum"),
-            suspect_commission=("suspect", "sum"),
-            contract_count=("ACK_ID", "size"),
-        )
+    plan_contracts = valid_base.groupby(
+        ["ACK_ID", "FORM_YEAR"],
+        as_index=False,
+    ).agg(
+        reported_premium=("reported_premium", "sum"),
+        reported_commission=("commission", "sum"),
+        suspect_commission=("suspect", "sum"),
+        contract_count=("ACK_ID", "size"),
     )
 
     plan_contracts["commission_rate"] = np.where(
         plan_contracts["reported_premium"] > 0,
-        plan_contracts["reported_commission"]
-        / plan_contracts["reported_premium"],
+        plan_contracts["reported_commission"] / plan_contracts["reported_premium"],
         np.nan,
     )
 
     # Core data excludes flagged contract rows.
-    core = valid_base[
-        ~valid_base["suspect"]
-    ].copy()
+    core = valid_base[~valid_base["suspect"]].copy()
 
-    core_annual = (
-        core
-        .groupby("FORM_YEAR", as_index=False)
-        .agg(
-            core_premium=("reported_premium", "sum"),
-            core_commission=("commission", "sum"),
-        )
+    core_annual = core.groupby("FORM_YEAR", as_index=False).agg(
+        core_premium=("reported_premium", "sum"),
+        core_commission=("commission", "sum"),
     )
 
     core_annual["core_weighted_rate"] = (
-        core_annual["core_commission"]
-        / core_annual["core_premium"]
+        core_annual["core_commission"] / core_annual["core_premium"]
     )
 
-    raw_annual = (
-        valid_base
-        .groupby("FORM_YEAR", as_index=False)
-        .agg(
-            reported_premium=("reported_premium", "sum"),
-            reported_commission=("commission", "sum"),
-        )
+    raw_annual = valid_base.groupby("FORM_YEAR", as_index=False).agg(
+        reported_premium=("reported_premium", "sum"),
+        reported_commission=("commission", "sum"),
     )
 
     raw_annual["reported_weighted_rate"] = (
-        raw_annual["reported_commission"]
-        / raw_annual["reported_premium"]
+        raw_annual["reported_commission"] / raw_annual["reported_premium"]
     )
 
     plan_rate = (
-        plan_contracts.loc[
-            plan_contracts["suspect_commission"] == 0
-        ]
+        plan_contracts.loc[plan_contracts["suspect_commission"] == 0]
         .groupby("FORM_YEAR")[["commission_rate"]]
         .agg(
             median_plan_rate=(
@@ -357,8 +308,7 @@ def load_data():
     )
 
     trend = (
-        raw_annual
-        .merge(
+        raw_annual.merge(
             core_annual[
                 [
                     "FORM_YEAR",
@@ -377,16 +327,9 @@ def load_data():
     )
 
     participants = (
-        plans
-        .groupby("FORM_YEAR", as_index=False)[
-            "TOT_PARTCP_BOY_CNT"
-        ]
+        plans.groupby("FORM_YEAR", as_index=False)["TOT_PARTCP_BOY_CNT"]
         .sum(min_count=1)
-        .rename(
-            columns={
-                "TOT_PARTCP_BOY_CNT": "participants_boy"
-            }
-        )
+        .rename(columns={"TOT_PARTCP_BOY_CNT": "participants_boy"})
     )
 
     trend = trend.merge(
@@ -412,6 +355,7 @@ def load_data():
 # Chart 1 — Commission intensity
 # ---------------------------------------------------------------------
 
+
 def commission_intensity_chart(data, height=260):
     trend = data["trend"].copy()
 
@@ -428,11 +372,7 @@ def commission_intensity_chart(data, height=260):
                 dash="dot",
                 width=2,
             ),
-            hovertemplate=(
-                "Year %{x}"
-                "<br>Reported rate %{y:.2f}%"
-                "<extra></extra>"
-            ),
+            hovertemplate=("Year %{x}<br>Reported rate %{y:.2f}%<extra></extra>"),
         )
     )
 
@@ -446,11 +386,7 @@ def commission_intensity_chart(data, height=260):
                 color=ACCENT,
                 width=3,
             ),
-            hovertemplate=(
-                "Year %{x}"
-                "<br>Core rate %{y:.2f}%"
-                "<extra></extra>"
-            ),
+            hovertemplate=("Year %{x}<br>Core rate %{y:.2f}%<extra></extra>"),
         )
     )
 
@@ -464,11 +400,7 @@ def commission_intensity_chart(data, height=260):
                 color=GOOD,
                 width=2,
             ),
-            hovertemplate=(
-                "Year %{x}"
-                "<br>Median plan rate %{y:.2f}%"
-                "<extra></extra>"
-            ),
+            hovertemplate=("Year %{x}<br>Median plan rate %{y:.2f}%<extra></extra>"),
         )
     )
 
@@ -494,37 +426,24 @@ def commission_intensity_chart(data, height=260):
 # Chart 2 — Carrier share slopegraph
 # ---------------------------------------------------------------------
 
+
 def carrier_share_chart(data, height=260):
     sch_a = data["SCH_A"].copy()
 
-    carrier_year = (
-        sch_a
-        .groupby(
-            ["FORM_YEAR", "carrier"],
-            as_index=False,
-        )
-        .agg(
-            premium=("reported_premium", "sum")
-        )
-    )
+    carrier_year = sch_a.groupby(
+        ["FORM_YEAR", "carrier"],
+        as_index=False,
+    ).agg(premium=("reported_premium", "sum"))
 
-    carrier_year = carrier_year[
-        carrier_year["premium"] > 0
+    carrier_year = carrier_year[carrier_year["premium"] > 0]
+
+    carrier_year["share"] = carrier_year["premium"] / carrier_year.groupby("FORM_YEAR")[
+        "premium"
+    ].transform("sum")
+
+    latest = carrier_year[carrier_year["FORM_YEAR"] == 2023].nlargest(8, "premium")[
+        "carrier"
     ]
-
-    carrier_year["share"] = (
-        carrier_year["premium"]
-        / carrier_year.groupby("FORM_YEAR")[
-            "premium"
-        ].transform("sum")
-    )
-
-    latest = (
-        carrier_year[
-            carrier_year["FORM_YEAR"] == 2023
-        ]
-        .nlargest(8, "premium")["carrier"]
-    )
 
     compare = carrier_year[
         carrier_year["FORM_YEAR"].isin([2019, 2023])
@@ -532,8 +451,7 @@ def carrier_share_chart(data, height=260):
     ].copy()
 
     wide = (
-        compare
-        .pivot(
+        compare.pivot(
             index="carrier",
             columns="FORM_YEAR",
             values="share",
@@ -566,11 +484,7 @@ def carrier_share_chart(data, height=260):
                 name=carrier,
                 line=dict(width=2),
                 marker=dict(size=7),
-                hovertemplate=(
-                    f"{carrier}"
-                    "<br>%{x}: %{y:.2f}%"
-                    "<extra></extra>"
-                ),
+                hovertemplate=(f"{carrier}<br>%{{x}}: %{{y:.2f}}%<extra></extra>"),
             )
         )
 
@@ -602,34 +516,22 @@ def carrier_share_chart(data, height=260):
 # Chart 3 — Commission outlier map
 # ---------------------------------------------------------------------
 
+
 def commission_outlier_chart(data, height=260):
     sch_a = data["SCH_A"].copy()
 
-    scatter = sch_a[
-        (sch_a["reported_premium"] > 0)
-        & (sch_a["commission"] > 0)
-    ].copy()
+    scatter = sch_a[(sch_a["reported_premium"] > 0) & (sch_a["commission"] > 0)].copy()
 
-    scatter = scatter[
-        scatter["commission_rate_pct"] > 0
-    ].copy()
+    scatter = scatter[scatter["commission_rate_pct"] > 0].copy()
 
-    fences = (
-        scatter
-        .groupby("FORM_YEAR")["commission"]
-        .agg(
-            q1=lambda s: s.quantile(0.25),
-            q3=lambda s: s.quantile(0.75),
-        )
+    fences = scatter.groupby("FORM_YEAR")["commission"].agg(
+        q1=lambda s: s.quantile(0.25),
+        q3=lambda s: s.quantile(0.75),
     )
 
-    fences["iqr"] = (
-        fences["q3"] - fences["q1"]
-    )
+    fences["iqr"] = fences["q3"] - fences["q1"]
 
-    fences["fence"] = (
-        fences["q3"] + 3 * fences["iqr"]
-    )
+    fences["fence"] = fences["q3"] + 3 * fences["iqr"]
 
     scatter = scatter.merge(
         fences["fence"],
@@ -638,18 +540,11 @@ def commission_outlier_chart(data, height=260):
         how="left",
     )
 
-    scatter["suspect"] = (
-        scatter["commission"]
-        > scatter["fence"]
-    )
+    scatter["suspect"] = scatter["commission"] > scatter["fence"]
 
-    suspect = scatter[
-        scatter["suspect"]
-    ].copy()
+    suspect = scatter[scatter["suspect"]].copy()
 
-    ordinary = scatter[
-        ~scatter["suspect"]
-    ].copy()
+    ordinary = scatter[~scatter["suspect"]].copy()
 
     sample_n = min(
         15_000,
@@ -686,16 +581,11 @@ def commission_outlier_chart(data, height=260):
     )
 
     scatter_plot["covered"] = pd.to_numeric(
-        scatter_plot[
-            "INS_PRSN_COVERED_EOY_CNT"
-        ],
+        scatter_plot["INS_PRSN_COVERED_EOY_CNT"],
         errors="coerce",
     )
 
-    scatter_plot["covered"] = (
-        scatter_plot["covered"]
-        .clip(lower=1)
-    )
+    scatter_plot["covered"] = scatter_plot["covered"].clip(lower=1)
 
     scatter_plot = scatter_plot[
         pd.to_numeric(
@@ -758,6 +648,7 @@ def commission_outlier_chart(data, height=260):
 # Chart 4 — Plan-size Sankey
 # ---------------------------------------------------------------------
 
+
 def plan_size_sankey(data, height=260):
     plans = data["plans"].copy()
 
@@ -789,11 +680,7 @@ def plan_size_sankey(data, height=260):
     ].copy()
 
     plan_size = plan_size[
-        plan_size["TOT_PARTCP_BOY_CNT"].notna()
-        & (
-            plan_size["TOT_PARTCP_BOY_CNT"]
-            >= 0
-        )
+        plan_size["TOT_PARTCP_BOY_CNT"].notna() & (plan_size["TOT_PARTCP_BOY_CNT"] >= 0)
     ]
 
     plan_size["size_bucket"] = pd.cut(
@@ -803,11 +690,7 @@ def plan_size_sankey(data, height=260):
     )
 
     base = (
-        plan_size[
-            plan_size["FORM_YEAR"].isin(
-                [2022, 2023]
-            )
-        ]
+        plan_size[plan_size["FORM_YEAR"].isin([2022, 2023])]
         .pivot(
             index="plan_key",
             columns="FORM_YEAR",
@@ -819,20 +702,15 @@ def plan_size_sankey(data, height=260):
     if base.empty:
         return go.Figure()
 
-    transitions = (
-        base
-        .reset_index()
-        .rename(
-            columns={
-                2022: "from",
-                2023: "to",
-            }
-        )
+    transitions = base.reset_index().rename(
+        columns={
+            2022: "from",
+            2023: "to",
+        }
     )
 
     links = (
-        transitions
-        .groupby(
+        transitions.groupby(
             ["from", "to"],
             observed=True,
         )
@@ -840,25 +718,13 @@ def plan_size_sankey(data, height=260):
         .reset_index(name="plans")
     )
 
-    left_nodes = [
-        f"2022 | {x}"
-        for x in size_labels
-    ]
+    left_nodes = [f"2022 | {x}" for x in size_labels]
 
-    right_nodes = [
-        f"2023 | {x}"
-        for x in size_labels
-    ]
+    right_nodes = [f"2023 | {x}" for x in size_labels]
 
-    node_labels = (
-        left_nodes + right_nodes
-    )
+    node_labels = left_nodes + right_nodes
 
-    node_index = {
-        label: i
-        for i, label
-        in enumerate(node_labels)
-    }
+    node_index = {label: i for i, label in enumerate(node_labels)}
 
     fig = go.Figure(
         go.Sankey(
@@ -873,24 +739,10 @@ def plan_size_sankey(data, height=260):
                 ),
             ),
             link=dict(
-                source=[
-                    node_index[
-                        f"2022 | {r['from']}"
-                    ]
-                    for _, r
-                    in links.iterrows()
-                ],
-                target=[
-                    node_index[
-                        f"2023 | {r['to']}"
-                    ]
-                    for _, r
-                    in links.iterrows()
-                ],
+                source=[node_index[f"2022 | {r['from']}"] for _, r in links.iterrows()],
+                target=[node_index[f"2023 | {r['to']}"] for _, r in links.iterrows()],
                 value=links["plans"].tolist(),
-                customdata=links[
-                    ["from", "to"]
-                ].astype(str).values,
+                customdata=links[["from", "to"]].astype(str).values,
                 hovertemplate=(
                     "From %{customdata[0]}"
                     "<br>To %{customdata[1]}"
@@ -914,23 +766,18 @@ def plan_size_sankey(data, height=260):
 # These are retained here but are not placed on the one-page dashboard.
 # ---------------------------------------------------------------------
 
+
 def premium_per_participant_chart(data, height=500):
     sch_a = data["SCH_A"]
     plans = data["plans"]
 
     plan_premium = (
-        sch_a
-        .groupby(
+        sch_a.groupby(
             ["ACK_ID", "FORM_YEAR"],
             as_index=False,
         )["reported_premium"]
         .sum()
-        .rename(
-            columns={
-                "reported_premium":
-                    "insured_premium"
-            }
-        )
+        .rename(columns={"reported_premium": "insured_premium"})
     )
 
     plan_econ = (
@@ -941,9 +788,7 @@ def premium_per_participant_chart(data, height=500):
                 "TOT_PARTCP_BOY_CNT",
             ]
         ]
-        .drop_duplicates(
-            ["ACK_ID", "FORM_YEAR"]
-        )
+        .drop_duplicates(["ACK_ID", "FORM_YEAR"])
         .merge(
             plan_premium,
             on=[
@@ -955,66 +800,38 @@ def premium_per_participant_chart(data, height=500):
         .copy()
     )
 
-    plan_econ[
-        "insured_premium"
-    ] = pd.to_numeric(
+    plan_econ["insured_premium"] = pd.to_numeric(
         plan_econ["insured_premium"],
         errors="coerce",
     )
 
-    plan_econ[
-        "TOT_PARTCP_BOY_CNT"
-    ] = pd.to_numeric(
+    plan_econ["TOT_PARTCP_BOY_CNT"] = pd.to_numeric(
         plan_econ["TOT_PARTCP_BOY_CNT"],
         errors="coerce",
     )
 
     plan_econ = plan_econ[
-        plan_econ["insured_premium"].gt(0)
-        & plan_econ[
-            "TOT_PARTCP_BOY_CNT"
-        ].gt(0)
+        plan_econ["insured_premium"].gt(0) & plan_econ["TOT_PARTCP_BOY_CNT"].gt(0)
     ].copy()
 
-    plan_econ[
-        "premium_per_participant"
-    ] = (
-        plan_econ["insured_premium"]
-        / plan_econ[
-            "TOT_PARTCP_BOY_CNT"
-        ]
+    plan_econ["premium_per_participant"] = (
+        plan_econ["insured_premium"] / plan_econ["TOT_PARTCP_BOY_CNT"]
     )
 
-    plan_econ = plan_econ[
-        plan_econ[
-            "premium_per_participant"
-        ].gt(0)
-    ].copy()
+    plan_econ = plan_econ[plan_econ["premium_per_participant"].gt(0)].copy()
 
-    plan_econ["log_participants"] = np.log10(
-        plan_econ[
-            "TOT_PARTCP_BOY_CNT"
+    plan_econ["log_participants"] = np.log10(plan_econ["TOT_PARTCP_BOY_CNT"])
+
+    plan_econ["log_premium_pp"] = np.log10(plan_econ["premium_per_participant"])
+
+    plan_econ = plan_econ.replace(
+        [np.inf, -np.inf],
+        np.nan,
+    ).dropna(
+        subset=[
+            "log_participants",
+            "log_premium_pp",
         ]
-    )
-
-    plan_econ["log_premium_pp"] = np.log10(
-        plan_econ[
-            "premium_per_participant"
-        ]
-    )
-
-    plan_econ = (
-        plan_econ
-        .replace(
-            [np.inf, -np.inf],
-            np.nan,
-        )
-        .dropna(
-            subset=[
-                "log_participants",
-                "log_premium_pp",
-            ]
-        )
     )
 
     fig = px.density_heatmap(
@@ -1068,8 +885,7 @@ def benefit_premium_chart(data, height=500):
         "Dental": "WLFR_BNFT_DENTAL_IND",
         "Vision": "WLFR_BNFT_VISION_IND",
         "Life": "WLFR_BNFT_LIFE_INSUR_IND",
-        "Temporary disability":
-            "WLFR_BNFT_TEMP_DISAB_IND",
+        "Temporary disability": "WLFR_BNFT_TEMP_DISAB_IND",
         "Unemployment": "WLFR_BNFT_UNEMP_IND",
         "Drug": "WLFR_BNFT_DRUG_IND",
         "Stop loss": "WLFR_BNFT_STOP_LOSS_IND",
@@ -1079,9 +895,7 @@ def benefit_premium_chart(data, height=500):
         "Other": "WLFR_BNFT_OTHER_IND",
     }
 
-    latest = sch_a[
-        sch_a["FORM_YEAR"] == 2023
-    ].copy()
+    latest = sch_a[sch_a["FORM_YEAR"] == 2023].copy()
 
     rows = []
 
@@ -1122,16 +936,8 @@ def benefit_premium_chart(data, height=500):
         go.Barpolar(
             r=summary["reported_premium"],
             theta=summary["benefit_type"],
-            text=[
-                money(v)
-                for v
-                in summary["reported_premium"]
-            ],
-            hovertemplate=(
-                "%{theta}"
-                "<br>Tagged premium %{r:$,.0f}"
-                "<extra></extra>"
-            ),
+            text=[money(v) for v in summary["reported_premium"]],
+            hovertemplate=("%{theta}<br>Tagged premium %{r:$,.0f}<extra></extra>"),
         )
     )
 
@@ -1155,27 +961,11 @@ def benefit_premium_chart(data, height=500):
 def service_provider_waterfall(data, height=450):
     sch_c = data["SCH_C"]
 
-    comp = sch_c[
-        sch_c["FORM_YEAR"] == 2023
-    ].copy()
+    comp = sch_c[sch_c["FORM_YEAR"] == 2023].copy()
 
-    direct = (
-        comp[
-            "PROVIDER_OTHER_DIRECT_COMP_AMT"
-        ]
-        .fillna(0)
-        .clip(lower=0)
-        .sum()
-    )
+    direct = comp["PROVIDER_OTHER_DIRECT_COMP_AMT"].fillna(0).clip(lower=0).sum()
 
-    indirect = (
-        comp[
-            "PROV_OTHER_TOT_IND_COMP_AMT"
-        ]
-        .fillna(0)
-        .clip(lower=0)
-        .sum()
-    )
+    indirect = comp["PROV_OTHER_TOT_IND_COMP_AMT"].fillna(0).clip(lower=0).sum()
 
     total = direct + indirect
 
@@ -1203,12 +993,7 @@ def service_provider_waterfall(data, height=450):
                 money(total),
             ],
             textposition="outside",
-            connector={
-                "line": {
-                    "color":
-                        "rgba(80,80,80,0.4)"
-                }
-            },
+            connector={"line": {"color": "rgba(80,80,80,0.4)"}},
         )
     )
 
@@ -1231,47 +1016,30 @@ def carrier_footprint_chart(data, height=450):
     plans = data["plans"]
 
     carrier_sets = (
-        sch_a[
-            sch_a["carrier"]
-            != "Not reported"
-        ]
-        .groupby(
-            ["ACK_ID", "FORM_YEAR"]
-        )["carrier"]
+        sch_a[sch_a["carrier"] != "Not reported"]
+        .groupby(["ACK_ID", "FORM_YEAR"])["carrier"]
         .apply(
             lambda s: frozenset(
-                x
-                for x
-                in s.dropna().unique()
-                if x
-                and x != "Not reported"
+                x for x in s.dropna().unique() if x and x != "Not reported"
             )
         )
-        .reset_index(
-            name="carrier_set"
-        )
+        .reset_index(name="carrier_set")
     )
 
-    carrier_sets = (
-        carrier_sets
-        .merge(
-            plans[
-                [
-                    "ACK_ID",
-                    "FORM_YEAR",
-                    "plan_key",
-                ]
-            ],
-            on=[
+    carrier_sets = carrier_sets.merge(
+        plans[
+            [
                 "ACK_ID",
                 "FORM_YEAR",
-            ],
-            how="left",
-        )
-        .dropna(
-            subset=["plan_key"]
-        )
-    )
+                "plan_key",
+            ]
+        ],
+        on=[
+            "ACK_ID",
+            "FORM_YEAR",
+        ],
+        how="left",
+    ).dropna(subset=["plan_key"])
 
     pairs = []
 
@@ -1281,31 +1049,13 @@ def carrier_footprint_chart(data, height=450):
         (2021, 2022),
         (2022, 2023),
     ]:
-        a = (
-            carrier_sets[
-                carrier_sets["FORM_YEAR"] == y0
-            ][
-                ["plan_key", "carrier_set"]
-            ]
-            .rename(
-                columns={
-                    "carrier_set": "set0"
-                }
-            )
-        )
+        a = carrier_sets[carrier_sets["FORM_YEAR"] == y0][
+            ["plan_key", "carrier_set"]
+        ].rename(columns={"carrier_set": "set0"})
 
-        b = (
-            carrier_sets[
-                carrier_sets["FORM_YEAR"] == y1
-            ][
-                ["plan_key", "carrier_set"]
-            ]
-            .rename(
-                columns={
-                    "carrier_set": "set1"
-                }
-            )
-        )
+        b = carrier_sets[carrier_sets["FORM_YEAR"] == y1][
+            ["plan_key", "carrier_set"]
+        ].rename(columns={"carrier_set": "set1"})
 
         pair = a.merge(
             b,
@@ -1324,11 +1074,7 @@ def carrier_footprint_chart(data, height=450):
 
         pair["year"] = f"{y0}→{y1}"
 
-        pairs.append(
-            pair[
-                ["year", "change"]
-            ]
-        )
+        pairs.append(pair[["year", "change"]])
 
     if not pairs:
         return go.Figure()
@@ -1339,24 +1085,16 @@ def carrier_footprint_chart(data, height=450):
     )
 
     summary = (
-        footprint
-        .groupby(
+        footprint.groupby(
             ["year", "change"],
             as_index=False,
         )
         .size()
-        .rename(
-            columns={
-                "size": "plans"
-            }
-        )
+        .rename(columns={"size": "plans"})
     )
 
-    summary["share"] = (
-        summary["plans"]
-        / summary.groupby("year")[
-            "plans"
-        ].transform("sum")
+    summary["share"] = summary["plans"] / summary.groupby("year")["plans"].transform(
+        "sum"
     )
 
     year_order = [
@@ -1371,9 +1109,7 @@ def carrier_footprint_chart(data, height=450):
         x="year",
         y="share",
         color="change",
-        category_orders={
-            "year": year_order
-        },
+        category_orders={"year": year_order},
         groupnorm="fraction",
         line_group="change",
         hover_data={
@@ -1388,9 +1124,7 @@ def carrier_footprint_chart(data, height=450):
         range=[0, 1],
     )
 
-    fig.update_xaxes(
-        title="Adjacent plan years"
-    )
+    fig.update_xaxes(title="Adjacent plan years")
 
     return style(
         fig,
