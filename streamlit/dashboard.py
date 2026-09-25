@@ -1,6 +1,7 @@
 import streamlit as st
 
 from figures.analyses import (
+    available_years,
     carrier_share_chart,
     commission_intensity_chart,
     load_data,
@@ -20,17 +21,33 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+# Tightened spacing so the page fits on one screen without scrolling.
+st.markdown(
+    """
+    <style>
+        .block-container { padding-top: 1.6rem; padding-bottom: 1rem; }
+        h3 { margin-top: 0.2rem !important; margin-bottom: 0.4rem !important; }
+        .stTabs [data-baseweb="tab-list"] { gap: 1.2rem; }
+        hr { margin: 0.6rem 0 !important; }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 
 # ---------------------------------------------------------------------
 # Load data
 # ---------------------------------------------------------------------
 
 data = load_data()
-kpis = calculate_kpis(data, year=2023)
+years = available_years(data)  # latest first
+if not years:
+    st.error("No plan years found in the loaded data.")
+    st.stop()
 
 
 # ---------------------------------------------------------------------
-# Header
+# Header + year selector
 # ---------------------------------------------------------------------
 
 title_col, year_col = st.columns([5, 1])
@@ -43,7 +60,9 @@ with title_col:
     )
 
 with year_col:
-    st.metric("Analysis year", str(kpis["year"]))
+    selected_year = st.selectbox("Analysis year", years, index=0)
+
+kpis = calculate_kpis(data, year=selected_year)
 
 st.divider()
 
@@ -58,32 +77,37 @@ st.divider()
 
 
 # ---------------------------------------------------------------------
-# Main analysis — 3 charts: one headline trend, two side by side
+# Main analysis
+#
+# One full-width trend covering every year in the data, plus two
+# secondary views in tabs (rather than stacked) so the page stays on
+# one screen regardless of how many years are loaded.
 # ---------------------------------------------------------------------
 
 CHART_CONFIG = {"displayModeBar": False, "responsive": True}
 
-st.subheader("Commission intensity")
+st.markdown("##### Commission intensity, all years")
 st.plotly_chart(
-    commission_intensity_chart(data, height=300),
+    commission_intensity_chart(data, height=260),
     use_container_width=True,
     config=CHART_CONFIG,
 )
 
-left, right = st.columns(2, gap="medium")
+first_year, last_year = years[-1], years[0]
+prior_year = years[1] if len(years) > 1 else last_year
 
-with left:
-    st.subheader("Carrier premium-share movement")
+tab_carriers, tab_plan_size = st.tabs(["Carrier premium share", "Plan-size transitions"])
+
+with tab_carriers:
     st.plotly_chart(
-        carrier_share_chart(data, height=280),
+        carrier_share_chart(data, year_from=first_year, year_to=last_year, height=260),
         use_container_width=True,
         config=CHART_CONFIG,
     )
 
-with right:
-    st.subheader("Plan-size transitions")
+with tab_plan_size:
     st.plotly_chart(
-        plan_size_sankey(data, height=280),
+        plan_size_sankey(data, year_from=prior_year, year_to=last_year, height=260),
         use_container_width=True,
         config=CHART_CONFIG,
     )
@@ -94,8 +118,8 @@ with right:
 # ---------------------------------------------------------------------
 
 st.caption(
-    "Methodology: Core commission rate excludes flagged Schedule A rows. "
-    "Flagged contracts use a year-specific 3×IQR commission outlier rule, "
-    "applied to rows with positive premium and non-negative commission. "
-    "Plan-size transitions include plans observed in both 2022 and 2023."
+    f"Methodology: Core commission rate excludes flagged Schedule A rows. Flagged contracts use "
+    f"a year-specific 3×IQR commission outlier rule on rows with positive premium and "
+    f"non-negative commission. Carrier share compares {first_year} to {last_year}; "
+    f"plan-size transitions compare {prior_year} to {last_year}."
 )

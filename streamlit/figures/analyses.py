@@ -204,6 +204,13 @@ def load_data():
     }
 
 
+def available_years(data):
+    """Years actually present in the loaded data, latest first."""
+
+    years = data["trend"]["FORM_YEAR"].dropna().astype(int).unique().tolist()
+    return sorted(years, reverse=True)
+
+
 # ---------------------------------------------------------------------
 # Chart 1 — Commission intensity
 # ---------------------------------------------------------------------
@@ -261,8 +268,13 @@ def commission_intensity_chart(data, height=300):
 # ---------------------------------------------------------------------
 
 
-def carrier_share_chart(data, height=280):
+def carrier_share_chart(data, year_from=None, year_to=None, top_n=8, height=280):
     sch_a = data["SCH_A"]
+
+    if year_from is None or year_to is None:
+        years = available_years(data)
+        year_to = year_to or (years[0] if years else None)
+        year_from = year_from or (years[-1] if years else None)
 
     carrier_year = sch_a.groupby(["FORM_YEAR", "carrier"], as_index=False, observed=True).agg(
         premium=("reported_premium", "sum")
@@ -273,26 +285,30 @@ def carrier_share_chart(data, height=280):
         "premium"
     ].transform("sum")
 
-    latest = carrier_year[carrier_year["FORM_YEAR"] == 2023].nlargest(8, "premium")["carrier"]
-
-    compare = carrier_year[
-        carrier_year["FORM_YEAR"].isin([2019, 2023]) & carrier_year["carrier"].isin(latest)
+    latest = carrier_year[carrier_year["FORM_YEAR"] == year_to].nlargest(top_n, "premium")[
+        "carrier"
     ]
 
-    wide = compare.pivot(index="carrier", columns="FORM_YEAR", values="share").dropna().reset_index()
+    compare = carrier_year[
+        carrier_year["FORM_YEAR"].isin([year_from, year_to]) & carrier_year["carrier"].isin(latest)
+    ]
+
+    wide = (
+        compare.pivot(index="carrier", columns="FORM_YEAR", values="share").dropna().reset_index()
+    )
 
     if wide.empty:
         return go.Figure()
 
-    wide = wide.sort_values(2023, ascending=False)
+    wide = wide.sort_values(year_to, ascending=False)
 
     fig = go.Figure()
     for _, row in wide.iterrows():
         carrier = row["carrier"]
         fig.add_trace(
             go.Scatter(
-                x=[2019, 2023],
-                y=[row[2019] * 100, row[2023] * 100],
+                x=[year_from, year_to],
+                y=[row[year_from] * 100, row[year_to] * 100],
                 mode="lines+markers",
                 name=str(carrier),
                 line=dict(width=2),
@@ -301,14 +317,19 @@ def carrier_share_chart(data, height=280):
             )
         )
 
-    fig.update_xaxes(range=[2018.6, 2023.4], tickvals=[2019, 2023], title="")
+    span = max(year_to - year_from, 1)
+    fig.update_xaxes(
+        range=[year_from - span * 0.08, year_to + span * 0.08],
+        tickvals=[year_from, year_to],
+        title="",
+    )
     fig.update_yaxes(title="Premium share (%)", ticksuffix="%", rangemode="tozero")
     fig.update_layout(showlegend=False)
 
     return style(
         fig,
         "Carrier premium-share movement",
-        "Top eight carriers by 2023 reported premium.",
+        f"Top {top_n} carriers by {year_to} reported premium.",
         height=height,
     )
 
@@ -318,8 +339,13 @@ def carrier_share_chart(data, height=280):
 # ---------------------------------------------------------------------
 
 
-def plan_size_sankey(data, height=280):
+def plan_size_sankey(data, year_from=None, year_to=None, height=280):
     plans = data["plans"]
+
+    if year_from is None or year_to is None:
+        years = available_years(data)  # latest first
+        year_to = year_to or (years[0] if years else None)
+        year_from = year_from or (years[1] if len(years) > 1 else year_to)
 
     size_bins = [-np.inf, 99, 499, 999, 4_999, 9_999, np.inf]
     size_labels = ["<100", "100–499", "500–999", "1k–4.9k", "5k–9.9k", "10k+"]
@@ -334,7 +360,7 @@ def plan_size_sankey(data, height=280):
     )
 
     base = (
-        plan_size[plan_size["FORM_YEAR"].isin([2022, 2023])]
+        plan_size[plan_size["FORM_YEAR"].isin([year_from, year_to])]
         .pivot(index="plan_key", columns="FORM_YEAR", values="size_bucket")
         .dropna()
     )
@@ -342,14 +368,14 @@ def plan_size_sankey(data, height=280):
     if base.empty:
         return go.Figure()
 
-    transitions = base.reset_index().rename(columns={2022: "from", 2023: "to"})
+    transitions = base.reset_index().rename(columns={year_from: "from", year_to: "to"})
 
     links = (
         transitions.groupby(["from", "to"], observed=True).size().reset_index(name="plans")
     )
 
-    left_nodes = [f"2022 | {x}" for x in size_labels]
-    right_nodes = [f"2023 | {x}" for x in size_labels]
+    left_nodes = [f"{year_from} | {x}" for x in size_labels]
+    right_nodes = [f"{year_to} | {x}" for x in size_labels]
     node_labels = left_nodes + right_nodes
     node_index = {label: i for i, label in enumerate(node_labels)}
 
@@ -363,8 +389,8 @@ def plan_size_sankey(data, height=280):
                 line=dict(color="rgba(50,50,50,0.25)", width=0.5),
             ),
             link=dict(
-                source=[node_index[f"2022 | {r['from']}"] for _, r in links.iterrows()],
-                target=[node_index[f"2023 | {r['to']}"] for _, r in links.iterrows()],
+                source=[node_index[f"{year_from} | {r['from']}"] for _, r in links.iterrows()],
+                target=[node_index[f"{year_to} | {r['to']}"] for _, r in links.iterrows()],
                 value=links["plans"].tolist(),
                 customdata=links[["from", "to"]].astype(str).values,
                 hovertemplate=(
@@ -376,7 +402,7 @@ def plan_size_sankey(data, height=280):
 
     return style(
         fig,
-        "Plan-size transitions: 2022 → 2023",
+        f"Plan-size transitions: {year_from} → {year_to}",
         "Matched plans using beginning-of-year participant bands.",
         height=height,
     )
