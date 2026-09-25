@@ -10,7 +10,9 @@ wheels/
 .venv
 
 # Data
-data/
+data/*
+!data/
+!data/exports/
 
 # VSCode configurations
 .vscode/
