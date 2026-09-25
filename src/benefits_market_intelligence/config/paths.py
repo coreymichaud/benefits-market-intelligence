@@ -11,8 +11,3 @@ EXPORTS_PATH = DATA_PATH / "exports"
 FIGURES_PATH = PROJECT_ROOT / "figures"
 EDA_PATH = FIGURES_PATH / "eda"
 ANALYSIS_PATH = FIGURES_PATH / "analysis"
-
-assert DATA_PATH.exists(), (
-    f"DATA_PATH not found: {DATA_PATH}\n"
-    f"paths.py resolved from: {Path(__file__).resolve()}"
-)
