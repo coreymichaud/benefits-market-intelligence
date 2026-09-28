@@ -1,9 +1,7 @@
-"""Load the Form 5500 parquet exports into small aggregate tables.
+"""Aggregate tables built from the Form 5500 parquet exports.
 
-Every query mirrors `notebooks/analysis.ipynb` (filing-lag control, one filing per plan and
-year, data-quality screens, line-of-coverage rules and broker name matching). DuckDB scans only
-the columns each query needs and returns aggregates, so the app never holds row-level filings in
-memory. The whole load runs once per server process and is shared by every session.
+The SQL follows notebooks/analysis.ipynb. DuckDB reads the parquet files once per server
+process and only the small aggregates are kept in memory.
 """
 
 import tempfile
@@ -109,9 +107,7 @@ BROKER_FIRMS = {
 }
 
 
-# ---------------------------------------------------------------------------------------------
 # SQL (same rules as the notebook; table names point at parquet views instead of gold.*)
-# ---------------------------------------------------------------------------------------------
 
 FILINGS = """
     SELECT
@@ -161,8 +157,7 @@ LINE_CASE = """
     END
 """
 
-# One row per contract passes the shared screen; the take-rate columns only sum contracts that
-# also pass the notebook's extra take-rate screen (premium sanity checks, contracts under $250M).
+# tr_* columns only count contracts that also pass the notebook's take-rate screen
 CONTRACTS = f"""
     WITH flagged AS (
         SELECT
@@ -394,14 +389,9 @@ FIRM_EVENTS = """
 """
 
 
-# ---------------------------------------------------------------------------------------------
-# Loading
-# ---------------------------------------------------------------------------------------------
-
-
 @dataclass(frozen=True)
 class Tables:
-    """Aggregates behind every chart. Treat as read-only: they are shared across sessions."""
+    """Aggregates behind every chart. Shared across sessions, so never modify them."""
 
     contracts: pd.DataFrame  # year, line, sector, state, commissions, fees, lives, ...
     health: pd.DataFrame  # year, band, sector, state, plans, self_funded
@@ -459,11 +449,6 @@ def load() -> Tables:
     )
 
 
-# ---------------------------------------------------------------------------------------------
-# Filters
-# ---------------------------------------------------------------------------------------------
-
-
 @dataclass(frozen=True)
 class Filters:
     start: int = FIRST
@@ -474,12 +459,6 @@ class Filters:
     @property
     def years(self) -> list[int]:
         return list(range(self.start, self.end + 1))
-
-    @property
-    def scope(self) -> str:
-        """Plain-language description of the current slice, for captions."""
-        parts = [self.industry or "All industries", STATE_NAMES.get(self.state, "U.S.")]
-        return f"{parts[0]}, {parts[1]}"
 
 
 def subset(

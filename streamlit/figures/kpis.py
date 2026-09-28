@@ -1,8 +1,4 @@
-"""Headline numbers for the KPI strips.
-
-Market KPIs come from the same yearly aggregates as the pay pool chart (analyses 1, 3 and 7), so
-the strip and the charts always agree. Broker KPIs come from `firm_stats` (analyses 5 and 9).
-"""
+"""KPI strips for each page, built from the same aggregates as the charts."""
 
 from dataclasses import dataclass
 
@@ -10,8 +6,8 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
-from figures.analyses import firm_stats, market_by_year
-from figures.data import Filters, Tables
+from figures.analyses import market_by_year
+from figures.data import STATE_NAMES, Filters, Tables, subset
 from figures.theme import count, growth, money
 
 
@@ -225,4 +221,155 @@ def broker(stats: pd.DataFrame, firm: str, f: Filters) -> list[Kpi]:
     ]
 
 
-__all__ = ["Kpi", "broker", "firm_stats", "market", "render"]
+SHORT_SECTORS = {
+    "Accommodation & Food Services": "Hospitality",
+    "Admin & Support Services": "Admin & Support",
+    "Educational Services": "Education",
+    "Health Care & Social Assistance": "Health Care",
+    "Management of Companies": "Holding Companies",
+    "Professional & Technical Services": "Professional Services",
+    "Public Administration": "Public Admin",
+    "Transportation & Warehousing": "Transportation",
+}
+
+
+def _pool(df: pd.DataFrame, by: str, f: Filters) -> pd.DataFrame:
+    """Broker pay by `by` (rows) and year (columns)."""
+    return (
+        df.assign(comp=df["commissions"] + df["fees"])
+        .pivot_table(index=by, columns="year", values="comp", aggfunc="sum")
+        .reindex(columns=f.years)
+        .fillna(0)
+    )
+
+
+def _share(df: pd.DataFrame, numerator: str, f: Filters) -> pd.Series:
+    agg = df.groupby("year")[[numerator, "plans"]].sum().reindex(f.years)
+    return (agg[numerator] / agg["plans"].where(agg["plans"] >= 25) * 100).astype(float)
+
+
+def _share_kpi(label: str, share: pd.Series, f: Filters, help: str) -> Kpi:
+    first, last = share.iloc[0], share.iloc[-1]
+    if not (np.isfinite(first) and np.isfinite(last)):
+        return Kpi(label, "–", help=help)
+    return Kpi(
+        label,
+        f"{last:.1f}%",
+        _signed(last - first, ".1f", " pts"),
+        f"since {f.start}",
+        share.ffill().bfill().tolist(),
+        help,
+    )
+
+
+def opportunity(t: Tables, f: Filters) -> list[Kpi]:
+    since = f"since {f.start}"
+    out = []
+
+    # Where: the state card ignores the state filter (like the map) unless one is picked
+    states = subset(t.contracts, f, state=False)
+    states = _pool(states[states["state"].isin(STATE_NAMES)], "state", f)
+    us_growth = growth(states[f.end].sum(), states[f.start].sum())
+    if f.state:
+        row = (
+            states.loc[f.state]
+            if f.state in states.index
+            else pd.Series(0.0, index=f.years)
+        )
+        change = growth(row[f.end], row[f.start])
+        out.append(
+            Kpi(
+                f"{STATE_NAMES[f.state]} broker pay",
+                money(row[f.end], plotly=False),
+                _signed(change, ".0f", "%") if np.isfinite(change) else None,
+                f"vs. U.S. {us_growth:+.0f}%",
+                row.tolist(),
+                f"Broker pay on plans sponsored in {STATE_NAMES[f.state]}, {f.end}.",
+            )
+        )
+    else:
+        established = states[states[f.start] >= states[f.start].sum() * 0.0093]
+        rates = growth(established[f.end], established[f.start]).dropna()
+        if rates.empty:
+            out.append(Kpi("Fastest-growing state", "–"))
+        else:
+            top = rates.idxmax()
+            out.append(
+                Kpi(
+                    "Fastest-growing state",
+                    STATE_NAMES[top],
+                    _signed(rates[top], ".0f", "%"),
+                    since,
+                    states.loc[top].tolist(),
+                    "Growth in broker pay among states with at least 0.9% of the national pool "
+                    f"in {f.start}. The U.S. grew {us_growth:+.0f}%.",
+                )
+            )
+
+    sectors = subset(t.contracts, f, industry=False)
+    sectors = _pool(sectors[sectors["sector"] != "Unknown"], "sector", f)
+    all_growth = growth(sectors[f.end].sum(), sectors[f.start].sum())
+    if f.industry:
+        row = (
+            sectors.loc[f.industry]
+            if f.industry in sectors.index
+            else pd.Series(0.0, index=f.years)
+        )
+        change = growth(row[f.end], row[f.start])
+        out.append(
+            Kpi(
+                f"{SHORT_SECTORS.get(f.industry, f.industry)} broker pay",
+                money(row[f.end], plotly=False),
+                _signed(change, ".0f", "%") if np.isfinite(change) else None,
+                f"vs. all industries {all_growth:+.0f}%",
+                row.tolist(),
+                f"Broker pay on plans sponsored by {f.industry} employers, {f.end}.",
+            )
+        )
+    else:
+        top10 = sectors.sort_values(f.end, ascending=False).head(10)
+        rates = growth(top10[f.end], top10[f.start]).dropna()
+        if rates.empty:
+            out.append(Kpi("Fastest-growing industry", "–"))
+        else:
+            top = rates.idxmax()
+            out.append(
+                Kpi(
+                    "Fastest-growing industry",
+                    SHORT_SECTORS.get(top, top),
+                    _signed(rates[top], ".0f", "%"),
+                    since,
+                    sectors.loc[top].tolist(),
+                    f"{top}: fastest growth in broker pay among the 10 largest industries.",
+                )
+            )
+
+    # What employers buy
+    health = subset(t.health, f)
+    out.append(
+        _share_kpi(
+            "Self-funded health plans",
+            _share(health, "self_funded", f),
+            f,
+            "Single-employer health plans (100+ participants) with no fully insured medical "
+            "contract: self-funded or level-funded.",
+        )
+    )
+    out.append(
+        _share_kpi(
+            "Self-funded, 100–249 participants",
+            _share(health[health["band"] == "100–249"], "self_funded", f),
+            f,
+            "The same measure for the smallest plans in the data, where the shift is fastest.",
+        )
+    )
+    out.append(
+        _share_kpi(
+            "Plans with voluntary benefits",
+            _share(subset(t.voluntary, f), "with_voluntary", f),
+            f,
+            "Single-employer welfare plans (100+ participants) with an insured voluntary contract "
+            "such as accident, critical illness or hospital indemnity.",
+        )
+    )
+    return out

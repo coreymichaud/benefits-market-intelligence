@@ -1,1 +1,1 @@
-"""Data, charts and page chrome for the Broker Market Intelligence dashboard."""
+"""Data, charts and page chrome for the Benefits Market Intelligence dashboard."""

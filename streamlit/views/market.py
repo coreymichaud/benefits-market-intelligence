@@ -1,26 +1,27 @@
-"""Market: how big the broker pay pool is, what is driving it, and how brokers get paid."""
+"""Market: size of the broker pay pool, what is driving it, and how brokers get paid."""
 
 import streamlit as st
 
 from figures import analyses, kpis
 from figures.data import LINES, load
-from figures.layout import filters, panel
+from figures.layout import filters, panel, view_switch
+
+HEIGHT = 450
 
 t = load()
 f = filters()
 
 
 def _toggle_line(point: dict) -> None:
-    """Clicking a bar in the bridge adds or removes that line from the line filter."""
     line = point.get("customdata")
     if line:
         current = st.session_state.get("lines") or []
         st.session_state["lines"] = (
-            [x for x in current if x != line] if line in current else current + [line]
+            [x for x in current if x != line] if line in current else [*current, line]
         )
 
 
-# The KPI strip sits above the line filter but depends on it, so reserve its slot and fill it later
+# The KPIs sit above the line filter but depend on it, so they are filled in at the end
 kpi_strip = st.container()
 
 left, right = st.columns([7, 5], gap="large")
@@ -39,25 +40,18 @@ with left:
             )
             or []
         )
-    panel(analyses.pay_pool(t, f, lines, height=430), key="pool")
+    panel(analyses.pay_pool(t, f, lines, height=HEIGHT), key="pool")
 with right:
-    view = st.segmented_control(
-        "View",
-        ["Growth by line", "Take rate", "Fee adoption"],
-        default="Growth by line",
-        required=True,
-        key="market_view",
-        label_visibility="collapsed",
-        bind="query-params",
-        persist_state="session",
+    view = view_switch(
+        ["Growth by line", "Take rate", "Fee adoption"], key="market_view"
     )
     if view == "Take rate":
-        panel(analyses.take_rate(t, f, lines, height=430), key="take_rate")
+        panel(analyses.take_rate(t, f, lines, height=HEIGHT), key="take_rate")
     elif view == "Fee adoption":
-        panel(analyses.fee_adoption(t, f, lines, height=430), key="fees")
+        panel(analyses.fee_adoption(t, f, lines, height=HEIGHT), key="fees")
     else:
         panel(
-            analyses.growth_bridge(t, f, lines, height=430),
+            analyses.growth_bridge(t, f, lines, height=HEIGHT),
             key=f"bridge_{'_'.join(sorted(lines))}",
             on_click=_toggle_line,
         )

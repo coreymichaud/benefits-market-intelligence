@@ -1,0 +1,49 @@
+# Streamlit reads this from the directory it is launched in. Community Cloud launches from the
+# repository root, so keep this file here rather than inside streamlit/.
+
+[client]
+toolbarMode = "minimal"
+
+[browser]
+gatherUsageStats = false
+
+[server]
+headless = true
+
+[theme]
+base = "light"
+primaryColor = "#046A38"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F4F6F2"
+textColor = "#000000"
+linkColor = "#046A38"
+linkUnderline = false
+borderColor = "#E2E5DF"
+showWidgetBorder = true
+
+greenColor = "#43B02A"
+greenTextColor = "#046A38"
+redColor = "#AA3036"
+grayColor = "#929292"
+grayTextColor = "#6E6E6E"
+blueColor = "#0D8390"
+
+font = "Public Sans:https://fonts.googleapis.com/css2?family=Public+Sans:wght@300..800&display=swap, Arial, sans-serif"
+headingFont = "Public Sans, Arial, sans-serif"
+baseFontSize = 14
+headingFontSizes = ["2.45rem", "1.2rem", "1.02rem", "0.95rem", "0.9rem", "0.85rem"]
+headingFontWeights = [700, 650, 600, 600, 600, 600]
+metricValueFontSize = "1.7rem"
+metricValueFontWeight = 650
+
+baseRadius = "0.5rem"
+buttonRadius = "0.5rem"
+
+dataframeBorderColor = "#E2E5DF"
+dataframeHeaderBackgroundColor = "#F4F6F2"
+
+chartCategoricalColors = ["#86BC25", "#046A38", "#0D8390", "#43B02A", "#007CB0", "#929292"]
+chartSequentialColors = [
+  "#F2F8E6", "#DCEDBF", "#C4E196", "#A9D46F", "#86BC25",
+  "#6FAA22", "#4F9A29", "#2E8B3A", "#177A37", "#046A38",
+]

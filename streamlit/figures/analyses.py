@@ -1,8 +1,6 @@
-"""Dashboard versions of the analyses in `notebooks/analysis.ipynb`.
+"""Dashboard versions of the analyses in notebooks/analysis.ipynb.
 
-Each builder takes the cached tables and the active filters and returns a `Chart`: the notebook's
-headline logic recomputed for the current slice, a one-line method caption, and the figure. The
-headline is printed by Streamlit above the chart, so it changes whenever someone filters.
+Each builder returns a Chart whose headline is recomputed for the active filters.
 """
 
 from dataclasses import dataclass
@@ -94,9 +92,7 @@ def _unit(value: float) -> tuple[float, str]:
     return (1e9, "B") if value >= 1e9 else (1e6, "M") if value >= 1e6 else (1e3, "K")
 
 
-# ---------------------------------------------------------------------------------------------
 # 1. Is the broker compensation pool growing faster than the lives it covers?
-# ---------------------------------------------------------------------------------------------
 
 
 def market_by_year(
@@ -221,9 +217,7 @@ def pay_pool(
     return Chart(headline, caption, fig)
 
 
-# ---------------------------------------------------------------------------------------------
 # 2. Which lines of coverage are driving the growth in broker compensation?
-# ---------------------------------------------------------------------------------------------
 
 BRIDGE_LABELS = {
     "Multi-line bundle": "Multi-line<br>bundle",
@@ -357,9 +351,7 @@ def growth_bridge(
     return Chart(headline, caption, fig)
 
 
-# ---------------------------------------------------------------------------------------------
 # 3. Is broker pay shifting from commissions toward carrier-paid fees?
-# ---------------------------------------------------------------------------------------------
 
 
 def fee_adoption(
@@ -415,23 +407,12 @@ def fee_adoption(
             xgap=3,
             ygap=3,
             showscale=False,
+            text=[[f"{v:.0f}%" if np.isfinite(v) else "" for v in row] for row in z],
+            texttemplate="%{text}",
+            textfont=dict(size=12),
             hovertemplate="%{y}<br>%{x}: %{z:.1f}% of contracts<extra></extra>",
         )
     )
-    for row_label, values in zip(rows, z):
-        for year, v in zip(f.years, values):
-            if np.isfinite(v):
-                notes.append(
-                    dict(
-                        x=str(year),
-                        y=row_label,
-                        text=f"{v:.0f}%",
-                        showarrow=False,
-                        font=dict(
-                            size=12, color="white" if v > z_max * 0.55 else BLACK
-                        ),
-                    )
-                )
     for row_label, d in zip(rows, fee_mix["delta"]):
         d_round = round(d)
         text = "flat" if abs(d_round) < 2 else f"{d_round:+d} pts"
@@ -449,16 +430,14 @@ def fee_adoption(
         )
     base_theme(fig, height, margin=dict(l=10, r=70, t=30, b=10))
     fig.update_layout(
-        xaxis=dict(side="top", showgrid=False, tickfont=dict(size=12)),
+        xaxis=dict(type="category", side="top", showgrid=False, tickfont=dict(size=12)),
         yaxis=dict(showgrid=False, tickfont=dict(size=12)),
     )
     fig.update_layout(annotations=notes)
     return Chart(headline, caption, fig)
 
 
-# ---------------------------------------------------------------------------------------------
 # 7. What share of premium are brokers capturing, and is that take rate compressing by line?
-# ---------------------------------------------------------------------------------------------
 
 
 def take_rate(
@@ -614,16 +593,13 @@ def take_rate(
     return Chart(headline, caption, fig)
 
 
-# ---------------------------------------------------------------------------------------------
 # 5 & 9. Broker firms: plans served, ranks, wins and losses
-# ---------------------------------------------------------------------------------------------
 
 
 def firm_stats(t: Tables, f: Filters) -> pd.DataFrame:
-    """One row per firm: plans served and rank by year, plus switching events in the range.
+    """One row per firm: plans served and rank by year, plus wins and losses in the range.
 
-    Events are counted on transitions into each year after the first (e.g. 2019 to 2020 is
-    counted in 2020), matching the notebook's win/loss analysis.
+    A move between two years is counted in the later year, as in the notebook.
     """
     plans = (
         subset(t.firm_plans, f)
@@ -688,8 +664,9 @@ QUADRANTS = {
 
 def momentum_status(stats: pd.DataFrame, firm: str) -> tuple[str, str, str] | None:
     """Which momentum-map quadrant a firm sits in: (label, badge color, icon)."""
-    peers = _momentum_firms(stats)["retention"].dropna()
-    if firm not in stats.index or peers.empty:
+    mapped = _momentum_firms(stats)
+    peers = mapped["retention"].dropna()
+    if firm not in mapped.index or peers.empty:
         return None
     row = stats.loc[firm]
     if not (np.isfinite(row["retention"]) and row["plans_first"] > 0):
@@ -787,37 +764,35 @@ def leaderboard(
         )
         change = row["growth"]
         label_color = PALETTE[2] if (is_focus or is_climber) else GREY
-        end_rank = row[f"rank_{f.end}"]
-        notes.append(
-            dict(
-                x=f.end,
-                y=end_rank,
-                xanchor="left",
-                xshift=20,
-                showarrow=False,
-                text=f"<b>{firm}</b>  {change:+.0f}%"
-                if np.isfinite(change)
-                else f"<b>{firm}</b>  new",
-                font=dict(
-                    size=12 if is_focus else 11,
-                    color=BLACK if is_focus else label_color,
-                ),
-            )
+        font = dict(
+            size=12 if is_focus else 11, color=BLACK if is_focus else label_color
         )
-        notes.append(
-            dict(
-                x=f.start,
-                y=row[f"rank_{f.start}"],
-                xanchor="right",
-                xshift=-20,
-                showarrow=False,
-                text=firm,
-                font=dict(
-                    size=12 if is_focus else 11,
-                    color=BLACK if is_focus else label_color,
-                ),
+        if row["plans_last"] > 0:
+            notes.append(
+                dict(
+                    x=f.end,
+                    y=row[f"rank_{f.end}"],
+                    xanchor="left",
+                    xshift=20,
+                    showarrow=False,
+                    text=f"<b>{firm}</b>  {change:+.0f}%"
+                    if np.isfinite(change)
+                    else f"<b>{firm}</b>  new",
+                    font=font,
+                )
             )
-        )
+        if row["plans_first"] > 0:
+            notes.append(
+                dict(
+                    x=f.start,
+                    y=row[f"rank_{f.start}"],
+                    xanchor="right",
+                    xshift=-20,
+                    showarrow=False,
+                    text=firm,
+                    font=font,
+                )
+            )
     base_theme(fig, height, margin=dict(l=150, r=190, t=30, b=10))
     fig.update_layout(
         xaxis=dict(
@@ -909,6 +884,7 @@ def win_loss(
                 textfont=dict(color="white", size=11),
                 customdata=wl.index,
                 hovertemplate="%{customdata}<br>" + name + ": %{x}<extra></extra>",
+                showlegend=False,
                 **KEEP_STYLE,
             )
         )
@@ -924,9 +900,26 @@ def win_loss(
             textfont=dict(color="white", size=11),
             customdata=np.column_stack([wl.index, wl["lost"]]),
             hovertemplate="%{customdata[0]}<br>Lost: %{customdata[1]}<extra></extra>",
+            showlegend=False,
             **KEEP_STYLE,
         )
     )
+    # Legend-only swatches: the bars' own colors are faded for every firm but the focus
+    for name, color in [
+        ("Won from local brokers", PALETTE[2]),
+        ("Won from national rivals", ACCENT),
+        ("Lost", RED),
+    ]:
+        fig.add_trace(
+            go.Scatter(
+                x=[None],
+                y=[None],
+                mode="markers",
+                name=name,
+                marker=dict(symbol="square", size=11, color=color),
+                hoverinfo="skip",
+            )
+        )
     x_max = max(wl["won"].max(), 1)
     x_min = max(wl["lost"].max(), 1)
     for label, (_, row) in zip(ticks, wl.iterrows()):
@@ -994,11 +987,11 @@ def _label_positions(
     y_range: tuple[float, float],
     width: float,
     height: float,
+    reserved: tuple = (),
 ) -> list[str]:
-    """Greedy label placement: try above, below, right, left; keep the spot with least overlap.
+    """Pick a text position for each bubble label that avoids other labels and bubbles.
 
-    Works in approximate pixels (plot area `width` x `height`) and penalizes labels that would
-    spill outside the plot or sit on top of another bubble.
+    `reserved` holds (x, y, w, h) pixel boxes that labels should also avoid.
     """
     px = (x - x_range[0]) / (x_range[1] - x_range[0]) * width
     py = (y - y_range[0]) / (y_range[1] - y_range[0]) * height
@@ -1028,7 +1021,7 @@ def _label_positions(
             14,
         ),
     }
-    placed, chosen = [], []
+    placed, chosen = list(reserved), []
     bubbles = [
         (px[i] - size[i] * 0.4, py[i] - size[i] * 0.4, size[i] * 0.8, size[i] * 0.8)
         for i in range(len(x))
@@ -1065,10 +1058,20 @@ def _label_positions(
     return [pos for _, pos in sorted(chosen)]
 
 
+def _corner_boxes(width: float, height: float, w: float = 160, h: float = 16) -> tuple:
+    """Pixel boxes of the four quadrant captions in the momentum map's corners."""
+    return (
+        (0, height - h, w, h),
+        (width - w, height - h, w, h),
+        (0, 0, w, h),
+        (width - w, 0, w, h),
+    )
+
+
 def momentum_map(
     t: Tables, f: Filters, focus: str | None = None, height: int = 460
 ) -> Chart:
-    """Synthesis of analyses 5 and 9: growth in plans served vs. how well each firm keeps clients."""
+    """Combines analyses 5 and 9: growth in plans served against client retention."""
     notes: list[dict] = []
     shapes: list[dict] = []
     stats = firm_stats(t, f)
@@ -1190,6 +1193,7 @@ def momentum_map(
         (y_lo, y_hi),
         width=720,
         height=height - 60,
+        reserved=_corner_boxes(720, height - 60),
     )
     fig.add_trace(
         go.Scatter(
@@ -1242,9 +1246,7 @@ def momentum_map(
     return Chart(headline, caption, fig)
 
 
-# ---------------------------------------------------------------------------------------------
 # 10. Where is broker compensation growing fastest?
-# ---------------------------------------------------------------------------------------------
 
 
 def state_map(t: Tables, f: Filters, height: int = 400) -> Chart:
@@ -1349,7 +1351,7 @@ def state_map(t: Tables, f: Filters, height: int = 400) -> Chart:
                 ],
                 thickness=12,
                 len=0.7,
-                x=1.0,
+                x=0.9,
                 tickfont=dict(size=10),
             ),
             unselected=dict(marker=dict(opacity=1)),
@@ -1390,6 +1392,7 @@ def state_map(t: Tables, f: Filters, height: int = 400) -> Chart:
             )
         )
     fig.update_geos(
+        domain=dict(x=[0, 0.9]),
         scope="usa",
         projection_type="albers usa",
         showlakes=False,
@@ -1400,9 +1403,7 @@ def state_map(t: Tables, f: Filters, height: int = 400) -> Chart:
     return Chart(headline, caption, fig)
 
 
-# ---------------------------------------------------------------------------------------------
 # 6. Which industries hold the largest and fastest-growing broker compensation pools?
-# ---------------------------------------------------------------------------------------------
 
 
 def industries(t: Tables, f: Filters, height: int = 400, top_n: int = 12) -> Chart:
@@ -1480,9 +1481,7 @@ def industries(t: Tables, f: Filters, height: int = 400, top_n: int = 12) -> Cha
     return Chart(headline, caption, fig)
 
 
-# ---------------------------------------------------------------------------------------------
 # 4. Is self-funding moving down-market into smaller employers?
-# ---------------------------------------------------------------------------------------------
 
 YEAR_COLORS = ["#D9D9D9", "#C9E3A0", PALETTE[0], PALETTE[1], "#2E8B3A", PALETTE[2]]
 
@@ -1522,8 +1521,8 @@ def self_funding(t: Tables, f: Filters, height: int = 300) -> Chart:
     else:
         headline = f"Self-funding grew most among {lead}-participant plans, up {d:.1f} pts since {f.start}"
     caption = (
-        "Single-employer health plans (100+ participants) with no fully insured medical contract on "
-        "Schedule A: self-funded or level-funded."
+        "Health plans (100+ participants) with no fully insured medical contract on Schedule A, "
+        "meaning self-funded or level-funded."
     )
 
     bands = rates.index.tolist()
@@ -1536,7 +1535,7 @@ def self_funding(t: Tables, f: Filters, height: int = 300) -> Chart:
                 x=[row.min(), row.max()],
                 y=[band, band],
                 mode="lines",
-                line=dict(color="#E3E3E3", width=9),
+                line=dict(color="#E3E3E3", width=11),
                 showlegend=False,
                 hoverinfo="skip",
             )
@@ -1549,7 +1548,7 @@ def self_funding(t: Tables, f: Filters, height: int = 300) -> Chart:
                 mode="markers",
                 name=str(year),
                 marker=dict(
-                    size=16 if year == f.end else 11,
+                    size=19 if year == f.end else 13,
                     color=color,
                     line=dict(color="white", width=1.5),
                 ),
@@ -1591,9 +1590,7 @@ def self_funding(t: Tables, f: Filters, height: int = 300) -> Chart:
     return Chart(headline, caption, fig)
 
 
-# ---------------------------------------------------------------------------------------------
 # 8. Is voluntary benefits adoption spreading across employer sizes?
-# ---------------------------------------------------------------------------------------------
 
 BAND_COLORS = ["#A9D46F", PALETTE[0], PALETTE[1], "#2E8B3A", PALETTE[2]]
 
@@ -1621,13 +1618,17 @@ def voluntary(t: Tables, f: Filters, height: int = 300) -> Chart:
             if up > len(adoption) / 2
             else "some"
         )
-        headline = (
-            f"Voluntary benefits adoption rose in {scope} plan size{'' if scope == 'every' else 's'}; "
-            f"{lead}-participant plans gained the most (+{adoption.loc[lead, 'delta']:.1f} pts)"
+        sizes = "plan size" if scope == "every" else "plan sizes"
+        gain = f"+{adoption.loc[lead, 'delta']:.1f} pts"
+        headline = _fit(
+            f"Voluntary benefits adoption rose in {scope} {sizes}; "
+            f"{lead}-participant plans gained the most ({gain})",
+            f"Voluntary benefits adoption rose in {scope} {sizes}, led by {lead} participants ({gain})",
+            limit=98,
         )
     caption = (
-        "Single-employer welfare plans (100+ participants) with an insured voluntary contract: accident, "
-        "critical illness, hospital indemnity and similar."
+        "Plans (100+ participants) with an insured voluntary contract, such as accident or "
+        "critical illness cover."
     )
 
     fig = go.Figure()

@@ -1,6 +1,6 @@
-"""Broker Market Intelligence: entrypoint and navigation.
+"""Benefits Market Intelligence dashboard.
 
-Run from the repository root so `.streamlit/config.toml` is picked up (Community Cloud does the same):
+Run from the repository root so `.streamlit/config.toml` is picked up:
 
     streamlit run streamlit/app.py
 """
@@ -11,13 +11,13 @@ from figures.data import load
 from figures.layout import header
 
 st.set_page_config(
-    page_title="Broker Market Intelligence",
-    page_icon=":material/insights:",
+    page_title="Benefits Market Intelligence",
+    page_icon=":material/person:",
     layout="wide",
 )
 
-# Page scripts live in views/, not pages/: a folder named pages/ next to the entrypoint switches on
-# Streamlit's legacy auto-navigation, which breaks deep links like /brokers on a fresh server.
+# Pages live in views/ rather than pages/: a pages/ folder next to the entrypoint turns on
+# Streamlit's legacy navigation, which breaks direct links such as /brokers.
 PAGES = [
     st.Page(
         "views/market.py", title="Market", icon=":material/payments:", default=True
@@ -28,23 +28,8 @@ PAGES = [
     ),
 ]
 
-# Title and one-line summary shown in each page's header, next to the global filters
-COPY = {
-    "Market": (
-        "How is broker pay changing?",
-        "Commissions and carrier-paid fees on employer health and welfare plans, from Form 5500 filings.",
-    ),
-    "Brokers": (
-        "Which brokers are gaining ground?",
-        "22 national brokers and consultants, tracked by the large employer plans that name them.",
-    ),
-    "Opportunity": (
-        "Where is the market moving?",
-        "Where broker pay is growing fastest, and how employers are changing what they buy.",
-    ),
-}
-
-page = st.navigation(PAGES, position="top")
-load()  # read the parquet files once per server process, with a loading message on first visit
-header(*COPY[page.title])
+# Page links go in the header row; Streamlit adds padding when they sit in its top bar
+page = st.navigation(PAGES, position="hidden")
+load()
+header(PAGES)
 page.run()

@@ -1,9 +1,4 @@
-"""Chart styling shared by every figure.
-
-Colors and `base_theme` follow `src/benefits_market_intelligence/visualizations/style.py` and the
-notebook helpers. Two dashboard-specific changes: titles live in Streamlit above each chart (so
-they can update with filters), and the font matches the app font set in `.streamlit/config.toml`.
-"""
+"""Chart styling, adapted from the notebook's base_theme and the project style module."""
 
 from itertools import pairwise
 
@@ -18,7 +13,7 @@ BLACK = "#000000"
 GREY = "#929292"
 RED = "#AA3036"
 
-# Supporting neutrals for chart furniture
+# Neutrals for gridlines and muted marks
 GRID = "#EDEDED"
 MUTED = "#D5D5D5"
 FAINT = "#F4F4F4"
@@ -27,19 +22,18 @@ GREEN_SCALE = [[0, "#F2F8E6"], [0.5, PALETTE[0]], [1, PALETTE[2]]]
 FONT = "Public Sans, Arial, sans-serif"
 USD = "&#36;"  # HTML-escaped $ so Plotly never treats $...$ as LaTeX
 
-# Clickable traces keep their own styling when clicked; the page re-renders with the new focus.
-# (Plotly's default fades everything else, and per-point opacity arrays on bars with text labels
-# stop the click from reaching Streamlit, so dimming is done with lighter colors instead.)
+# Stop Plotly from fading unclicked points; the page redraws its own highlight after a click.
+# Per-bar opacity is avoided for the same reason: with text labels it swallows the click event.
 KEEP_STYLE = dict(
     selected=dict(marker=dict(opacity=1)), unselected=dict(marker=dict(opacity=1))
 )
 
-# Hide Plotly's hover toolbar and keep scroll-zoom off so charts behave like a dashboard
+# No hover toolbar or scroll zoom
 PLOTLY_CONFIG = {"displayModeBar": False, "scrollZoom": False, "responsive": True}
 
 
 def base_theme(fig: go.Figure, height: int, margin: dict | None = None) -> go.Figure:
-    """Apply the house style. No title: the dashboard prints the headline above the chart."""
+    """House style. Titles are left off because the page prints the headline."""
     fig.update_layout(
         template="plotly_white",
         colorway=PALETTE,
@@ -107,11 +101,6 @@ def empty_figure(message: str, height: int) -> go.Figure:
     fig.update_xaxes(visible=False)
     fig.update_yaxes(visible=False)
     return fig
-
-
-# ---------------------------------------------------------------------------------------------
-# Formatting
-# ---------------------------------------------------------------------------------------------
 
 
 def money(v: float, decimals: int = 1, *, plotly: bool = True) -> str:
