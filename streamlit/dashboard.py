@@ -96,7 +96,9 @@ st.plotly_chart(
 first_year, last_year = years[-1], years[0]
 prior_year = years[1] if len(years) > 1 else last_year
 
-tab_carriers, tab_plan_size = st.tabs(["Carrier premium share", "Plan-size transitions"])
+tab_carriers, tab_plan_size = st.tabs(
+    ["Carrier premium share", "Plan-size transitions"]
+)
 
 with tab_carriers:
     st.plotly_chart(

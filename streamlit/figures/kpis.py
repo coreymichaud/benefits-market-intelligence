@@ -41,10 +41,13 @@ def calculate_kpis(data, year=2023):
     )
 
     year_plan_rates = plan_contracts[
-        (plan_contracts["FORM_YEAR"] == year) & (plan_contracts["suspect_commission"] == 0)
+        (plan_contracts["FORM_YEAR"] == year)
+        & (plan_contracts["suspect_commission"] == 0)
     ]
     median_plan_rate = (
-        year_plan_rates["commission_rate"].median() if not year_plan_rates.empty else np.nan
+        year_plan_rates["commission_rate"].median()
+        if not year_plan_rates.empty
+        else np.nan
     )
 
     return {
@@ -94,7 +97,9 @@ def render_kpi_cards(st, kpis):
         ),
         (
             "Flagged contracts",
-            f"{kpis['flagged_contracts']:,}" if pd.notna(kpis["flagged_contracts"]) else "—",
+            f"{kpis['flagged_contracts']:,}"
+            if pd.notna(kpis["flagged_contracts"])
+            else "—",
             f"{kpis['flagged_share_pct']:.1f}% of {kpis['total_contracts']:,}"
             if pd.notna(kpis["flagged_share_pct"])
             else "—",

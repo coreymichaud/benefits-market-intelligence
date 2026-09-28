@@ -49,7 +49,12 @@ def style(fig, title, subtitle=None, height=300):
         paper_bgcolor="white",
         plot_bgcolor="white",
         legend=dict(
-            orientation="h", yanchor="bottom", y=1.01, xanchor="right", x=1, font=dict(size=9)
+            orientation="h",
+            yanchor="bottom",
+            y=1.01,
+            xanchor="right",
+            x=1,
+            font=dict(size=9),
         ),
         hoverlabel=dict(bgcolor="white"),
     )
@@ -91,7 +96,13 @@ def clean_text(s, fallback="Not reported"):
 def load_data():
     f_5500 = pd.read_parquet(
         EXPORTS_PATH / "F_5500.parquet",
-        columns=["SPONS_DFE_EIN", "SPONS_DFE_PN", "ACK_ID", "FORM_YEAR", "TOT_PARTCP_BOY_CNT"],
+        columns=[
+            "SPONS_DFE_EIN",
+            "SPONS_DFE_PN",
+            "ACK_ID",
+            "FORM_YEAR",
+            "TOT_PARTCP_BOY_CNT",
+        ],
     )
 
     sch_a = pd.read_parquet(
@@ -108,11 +119,18 @@ def load_data():
 
     f_5500 = num(f_5500, ["TOT_PARTCP_BOY_CNT"])
     sch_a = num(
-        sch_a, ["PENSION_PREM_PAID_TOT_AMT", "WLFR_PREMIUM_RCVD_AMT", "INS_BROKER_COMM_TOT_AMT"]
+        sch_a,
+        [
+            "PENSION_PREM_PAID_TOT_AMT",
+            "WLFR_PREMIUM_RCVD_AMT",
+            "INS_BROKER_COMM_TOT_AMT",
+        ],
     )
 
     for df in (f_5500, sch_a):
-        df["FORM_YEAR"] = pd.to_numeric(df["FORM_YEAR"], errors="coerce").astype("Int64")
+        df["FORM_YEAR"] = pd.to_numeric(df["FORM_YEAR"], errors="coerce").astype(
+            "Int64"
+        )
 
     f_5500["SPONS_DFE_EIN"] = clean_text(f_5500["SPONS_DFE_EIN"], fallback="")
     f_5500["SPONS_DFE_PN"] = clean_text(f_5500["SPONS_DFE_PN"], fallback="")
@@ -141,7 +159,9 @@ def load_data():
     # rows with positive premium and non-negative commission.
     # -------------------------------------------------------------
 
-    valid_base = sch_a[(sch_a["reported_premium"] > 0) & (sch_a["commission"] >= 0)].copy()
+    valid_base = sch_a[
+        (sch_a["reported_premium"] > 0) & (sch_a["commission"] >= 0)
+    ].copy()
 
     fences = (
         valid_base.groupby("FORM_YEAR")["commission"]
@@ -170,10 +190,13 @@ def load_data():
     core_annual = core.groupby("FORM_YEAR", as_index=False).agg(
         core_premium=("reported_premium", "sum"), core_commission=("commission", "sum")
     )
-    core_annual["core_weighted_rate"] = core_annual["core_commission"] / core_annual["core_premium"]
+    core_annual["core_weighted_rate"] = (
+        core_annual["core_commission"] / core_annual["core_premium"]
+    )
 
     raw_annual = valid_base.groupby("FORM_YEAR", as_index=False).agg(
-        reported_premium=("reported_premium", "sum"), reported_commission=("commission", "sum")
+        reported_premium=("reported_premium", "sum"),
+        reported_commission=("commission", "sum"),
     )
     raw_annual["reported_weighted_rate"] = (
         raw_annual["reported_commission"] / raw_annual["reported_premium"]
@@ -188,7 +211,9 @@ def load_data():
 
     trend = (
         raw_annual.merge(
-            core_annual[["FORM_YEAR", "core_weighted_rate"]], on="FORM_YEAR", how="outer"
+            core_annual[["FORM_YEAR", "core_weighted_rate"]],
+            on="FORM_YEAR",
+            how="outer",
         )
         .merge(plan_rate, on="FORM_YEAR", how="left")
         .sort_values("FORM_YEAR")
@@ -276,25 +301,28 @@ def carrier_share_chart(data, year_from=None, year_to=None, top_n=8, height=280)
         year_to = year_to or (years[0] if years else None)
         year_from = year_from or (years[-1] if years else None)
 
-    carrier_year = sch_a.groupby(["FORM_YEAR", "carrier"], as_index=False, observed=True).agg(
-        premium=("reported_premium", "sum")
-    )
+    carrier_year = sch_a.groupby(
+        ["FORM_YEAR", "carrier"], as_index=False, observed=True
+    ).agg(premium=("reported_premium", "sum"))
     carrier_year = carrier_year[carrier_year["premium"] > 0]
 
     carrier_year["share"] = carrier_year["premium"] / carrier_year.groupby("FORM_YEAR")[
         "premium"
     ].transform("sum")
 
-    latest = carrier_year[carrier_year["FORM_YEAR"] == year_to].nlargest(top_n, "premium")[
-        "carrier"
-    ]
+    latest = carrier_year[carrier_year["FORM_YEAR"] == year_to].nlargest(
+        top_n, "premium"
+    )["carrier"]
 
     compare = carrier_year[
-        carrier_year["FORM_YEAR"].isin([year_from, year_to]) & carrier_year["carrier"].isin(latest)
+        carrier_year["FORM_YEAR"].isin([year_from, year_to])
+        & carrier_year["carrier"].isin(latest)
     ]
 
     wide = (
-        compare.pivot(index="carrier", columns="FORM_YEAR", values="share").dropna().reset_index()
+        compare.pivot(index="carrier", columns="FORM_YEAR", values="share")
+        .dropna()
+        .reset_index()
     )
 
     if wide.empty:
@@ -356,7 +384,9 @@ def plan_size_sankey(data, year_from=None, year_to=None, height=280):
     ]
 
     plan_size = plan_size.assign(
-        size_bucket=pd.cut(plan_size["TOT_PARTCP_BOY_CNT"], bins=size_bins, labels=size_labels)
+        size_bucket=pd.cut(
+            plan_size["TOT_PARTCP_BOY_CNT"], bins=size_bins, labels=size_labels
+        )
     )
 
     base = (
@@ -371,7 +401,9 @@ def plan_size_sankey(data, year_from=None, year_to=None, height=280):
     transitions = base.reset_index().rename(columns={year_from: "from", year_to: "to"})
 
     links = (
-        transitions.groupby(["from", "to"], observed=True).size().reset_index(name="plans")
+        transitions.groupby(["from", "to"], observed=True)
+        .size()
+        .reset_index(name="plans")
     )
 
     left_nodes = [f"{year_from} | {x}" for x in size_labels]
@@ -389,8 +421,13 @@ def plan_size_sankey(data, year_from=None, year_to=None, height=280):
                 line=dict(color="rgba(50,50,50,0.25)", width=0.5),
             ),
             link=dict(
-                source=[node_index[f"{year_from} | {r['from']}"] for _, r in links.iterrows()],
-                target=[node_index[f"{year_to} | {r['to']}"] for _, r in links.iterrows()],
+                source=[
+                    node_index[f"{year_from} | {r['from']}"]
+                    for _, r in links.iterrows()
+                ],
+                target=[
+                    node_index[f"{year_to} | {r['to']}"] for _, r in links.iterrows()
+                ],
                 value=links["plans"].tolist(),
                 customdata=links[["from", "to"]].astype(str).values,
                 hovertemplate=(
