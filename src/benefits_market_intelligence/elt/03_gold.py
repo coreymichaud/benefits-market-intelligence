@@ -26,6 +26,7 @@ F_5500_top_cols = [
     "SCH_DCG_ATTACHED_IND",
     "SCH_MEP_ATTACHED_IND",
     "FORM_YEAR",
+    "SPONS_DFE_MAIL_US_STATE",
 ]
 
 # SCH_A columns to include
@@ -59,6 +60,7 @@ SCH_A_top_cols = [
     "FORM_YEAR",
     "WLFR_TOT_CHARGES_PAID_AMT",
     "WLFR_BNFT_LONG_TERM_DISAB_IND",
+    "FORM_ID",
 ]
 
 # SCH_C_P1_I2 columns to include
