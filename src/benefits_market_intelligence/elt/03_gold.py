@@ -57,6 +57,8 @@ SCH_A_top_cols = [
     "INS_BROKER_FEES_TOT_AMT",
     "INS_PRSN_COVERED_EOY_CNT",
     "FORM_YEAR",
+    "WLFR_TOT_CHARGES_PAID_AMT",
+    "WLFR_BNFT_LONG_TERM_DISAB_IND",
 ]
 
 # SCH_C_P1_I2 columns to include
