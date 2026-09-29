@@ -2,7 +2,9 @@
 
 **Where broker compensation in the U.S. employee benefits market is growing, who is capturing it, and where a brokerage should compete next.** Built on six years of public Form 5500 filings (2019–2024).
 
-![Benefits Market Intelligence dashboard](assets/dashboard.png)
+[![Benefits Market Intelligence dashboard](assets/dashboard.png)](https://benefits-market-intelligence.streamlit.app/)
+
+Check out the [live link here.](https://benefits-market-intelligence.streamlit.app/)
 
 ---
 
