@@ -976,7 +976,9 @@ def win_loss(
 
 def _momentum_firms(stats: pd.DataFrame) -> pd.DataFrame:
     """Leaderboard firms with enough history to place on the momentum map."""
-    if stats.empty:  # firm_stats returns a frame with no columns when no firm serves the slice
+    if (
+        stats.empty
+    ):  # firm_stats returns a frame with no columns when no firm serves the slice
         return stats
     firms = leaderboard_firms(stats)
     return firms[(firms["plans_first"] >= 3) & (firms["kept"] + firms["lost"] >= 5)]
