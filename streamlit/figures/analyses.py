@@ -664,6 +664,8 @@ QUADRANTS = {
 
 def momentum_status(stats: pd.DataFrame, firm: str) -> tuple[str, str, str] | None:
     """Which momentum-map quadrant a firm sits in: (label, badge color, icon)."""
+    if stats.empty or firm not in stats.index:  # no national firm serves this slice
+        return None
     mapped = _momentum_firms(stats)
     peers = mapped["retention"].dropna()
     if firm not in mapped.index or peers.empty:
@@ -974,6 +976,8 @@ def win_loss(
 
 def _momentum_firms(stats: pd.DataFrame) -> pd.DataFrame:
     """Leaderboard firms with enough history to place on the momentum map."""
+    if stats.empty:  # firm_stats returns a frame with no columns when no firm serves the slice
+        return stats
     firms = leaderboard_firms(stats)
     return firms[(firms["plans_first"] >= 3) & (firms["kept"] + firms["lost"] >= 5)]
 
@@ -1075,7 +1079,7 @@ def momentum_map(
     notes: list[dict] = []
     shapes: list[dict] = []
     stats = firm_stats(t, f)
-    firms = _momentum_firms(stats) if not stats.empty else stats
+    firms = _momentum_firms(stats)
     if len(firms) < 3:
         return Chart(
             "Too few broker relationships for this selection",
