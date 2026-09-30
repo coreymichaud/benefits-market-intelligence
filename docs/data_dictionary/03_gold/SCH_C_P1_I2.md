@@ -1,23 +1,18 @@
 # gold.SCH_C_P1_I2
 
-This data was created from the `silver.SCH_C_P1_I2_*_Latest` table, mainly to cut columns. To know more about the transformations, please check out the [data-transformations.md](../../data-transformations.md) file.
+A subset of `silver.SCH_C_P1_I2` columns chosen by `03_gold.py`, with every row kept. Types are unchanged from silver. `03_gold.py` also writes this table to `data/exports/SCH_C_P1_I2.parquet`, which the Streamlit dashboard reads.
 
-## Overview
+- **Rows:** 1,675,037
+- **Columns:** 9
 
-- **rows:** 1,675,037
-
-- **columns:** 9
-
-## Table Information
-
-| column_name                    | type    |
-| ------------------------------ | ------- |
-| ACK_ID                         | TEXT    |
-| PROVIDER_OTHER_NAME            | TEXT    |
-| PROVIDER_OTHER_EIN             | TEXT    |
-| PROVIDER_OTHER_SRVC_CODES      | TEXT    |
-| PROVIDER_OTHER_RELATION        | TEXT    |
-| PROVIDER_OTHER_DIRECT_COMP_AMT | NUMERIC |
-| PROV_OTHER_INDIRECT_COMP_IND   | TEXT    |
-| PROV_OTHER_TOT_IND_COMP_AMT    | NUMERIC |
-| FORM_YEAR                      | TEXT    |
+| Column | Type | Description |
+| --- | --- | --- |
+| `ACK_ID` | VARCHAR | Acknowledgment ID (PK) |
+| `PROVIDER_OTHER_NAME` | VARCHAR | Other provider name |
+| `PROVIDER_OTHER_EIN` | VARCHAR | Other provider EIN |
+| `PROVIDER_OTHER_SRVC_CODES` | VARCHAR | Other provider service codes |
+| `PROVIDER_OTHER_RELATION` | VARCHAR | Other provider relationship |
+| `PROVIDER_OTHER_DIRECT_COMP_AMT` | DOUBLE | Other provider direct compensation |
+| `PROV_OTHER_INDIRECT_COMP_IND` | VARCHAR | Other provider indirect compensation indicator |
+| `PROV_OTHER_TOT_IND_COMP_AMT` | DOUBLE | Other provider total indirect compensation |
+| `FORM_YEAR` | INTEGER | Form year of the source file, added in silver |

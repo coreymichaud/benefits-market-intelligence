@@ -1,41 +1,38 @@
 # gold.SCH_A
 
-This data was created from the `silver.SCH_A_*_Latest` table, mainly to cut columns. To know more about the transformations, please check out the [data-transformations.md](../../data-transformations.md) file.
+A subset of `silver.SCH_A` columns chosen by `03_gold.py`, with every row kept. Types are unchanged from silver. `03_gold.py` also writes this table to `data/exports/SCH_A.parquet`, which the Streamlit dashboard reads.
 
-## Overview
+- **Rows:** 2,015,924
+- **Columns:** 29
 
-- **rows:** 2,015,924
-
-- **columns:** 27
-
-## Table Information
-
-| column_name                | type    |
-| -------------------------- | ------- |
-| ACK_ID                     | TEXT    |
-| INS_CARRIER_NAME           | TEXT    |
-| WLFR_BNFT_HEALTH_IND       | TEXT    |
-| WLFR_BNFT_DENTAL_IND       | TEXT    |
-| WLFR_BNFT_VISION_IND       | TEXT    |
-| WLFR_BNFT_LIFE_INSUR_IND   | TEXT    |
-| WLFR_BNFT_TEMP_DISAB_IND   | TEXT    |
-| WLFR_BNFT_UNEMP_IND        | TEXT    |
-| WLFR_BNFT_DRUG_IND         | TEXT    |
-| WLFR_BNFT_STOP_LOSS_IND    | TEXT    |
-| WLFR_BNFT_HMO_IND          | TEXT    |
-| WLFR_BNFT_PPO_IND          | TEXT    |
-| WLFR_BNFT_INDEMNITY_IND    | TEXT    |
-| WLFR_BNFT_OTHER_IND        | TEXT    |
-| WLFR_REFUND_CASH_IND       | TEXT    |
-| WLFR_REFUND_CREDIT_IND     | TEXT    |
-| INS_FAIL_PROVIDE_INFO_IND  | TEXT    |
-| PENSION_PREM_PAID_TOT_AMT  | NUMERIC |
-| PENSION_UNPAID_PREMIUM_AMT | NUMERIC |
-| WLFR_PREMIUM_RCVD_AMT      | NUMERIC |
-| WLFR_UNPAID_DUE_AMT        | NUMERIC |
-| WLFR_TOT_EARNED_PREM_AMT   | NUMERIC |
-| INS_CARRIER_NAME           | TEXT    |
-| INS_BROKER_COMM_TOT_AMT    | NUMERIC |
-| INS_BROKER_FEES_TOT_AMT    | NUMERIC |
-| INS_PRSN_COVERED_EOY_CNT   | TEXT    |
-| FORM_YEAR                  | TEXT    |
+| Column | Type | Description |
+| --- | --- | --- |
+| `ACK_ID` | VARCHAR | Acknowledgment ID (PK) |
+| `INS_CARRIER_NAME` | VARCHAR | Insurance carrier name |
+| `WLFR_BNFT_HEALTH_IND` | VARCHAR | Health benefit indicator |
+| `WLFR_BNFT_DENTAL_IND` | VARCHAR | Dental benefit indicator |
+| `WLFR_BNFT_VISION_IND` | VARCHAR | Vision benefit indicator |
+| `WLFR_BNFT_LIFE_INSUR_IND` | VARCHAR | Life insurance benefit indicator |
+| `WLFR_BNFT_TEMP_DISAB_IND` | VARCHAR | Temporary disability benefit indicator |
+| `WLFR_BNFT_UNEMP_IND` | VARCHAR | Unemployment benefit indicator |
+| `WLFR_BNFT_DRUG_IND` | VARCHAR | Prescription drug benefit indicator |
+| `WLFR_BNFT_STOP_LOSS_IND` | VARCHAR | Stop-loss benefit indicator |
+| `WLFR_BNFT_HMO_IND` | VARCHAR | HMO benefit indicator |
+| `WLFR_BNFT_PPO_IND` | VARCHAR | PPO benefit indicator |
+| `WLFR_BNFT_INDEMNITY_IND` | VARCHAR | Indemnity benefit indicator |
+| `WLFR_BNFT_OTHER_IND` | VARCHAR | Other welfare benefit indicator |
+| `WLFR_REFUND_CASH_IND` | VARCHAR | Cash refund indicator |
+| `WLFR_REFUND_CREDIT_IND` | VARCHAR | Credit refund indicator |
+| `INS_FAIL_PROVIDE_INFO_IND` | VARCHAR | Failure to provide information indicator |
+| `PENSION_PREM_PAID_TOT_AMT` | DOUBLE | Total pension premiums paid |
+| `PENSION_UNPAID_PREMIUM_AMT` | DOUBLE | Unpaid pension premiums |
+| `WLFR_PREMIUM_RCVD_AMT` | DOUBLE | Premiums received |
+| `WLFR_UNPAID_DUE_AMT` | DOUBLE | Unpaid premiums due |
+| `WLFR_TOT_EARNED_PREM_AMT` | DOUBLE | Total earned premiums |
+| `INS_BROKER_COMM_TOT_AMT` | DOUBLE | Total broker commissions |
+| `INS_BROKER_FEES_TOT_AMT` | DOUBLE | Total broker fees |
+| `INS_PRSN_COVERED_EOY_CNT` | VARCHAR | Persons covered at year end |
+| `FORM_YEAR` | INTEGER | Form year of the source file, added in silver |
+| `WLFR_TOT_CHARGES_PAID_AMT` | DOUBLE | Total charges paid |
+| `WLFR_BNFT_LONG_TERM_DISAB_IND` | VARCHAR | Long-term disability benefit indicator |
+| `FORM_ID` | DOUBLE | Form ID |
