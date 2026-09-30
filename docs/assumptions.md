@@ -33,7 +33,7 @@ This document covers the rules and judgment calls behind the analysis in [`noteb
 
 - **Plan key:** a plan is its sponsor EIN plus its three-digit plan number (`SPONS_DFE_EIN` + `SPONS_DFE_PN`).
 - **One filing per plan per year:** filings are deduplicated to one per sponsor EIN, plan number and year, keeping the latest submission (highest `ACK_ID`). This runs after the filing window, so the filing that's kept is the latest on-time one.
-- **Plan year:** `FORM_YEAR` is used as the plan year. After the filing window, the plan year begins in `FORM_YEAR` for all but about 1,100 filings.
+- **Form year as plan year:** DOL files every filing under its form year, the year printed on the form, and the analysis uses `FORM_YEAR` as the plan year. After the filing window, the plan year begins in `FORM_YEAR` for all but about 1,100 filings.
 - **Mergers and renumbering:** if a sponsor changes its EIN or renumbers a plan, the plan looks brand new. This mostly matters for chart 9, which follows plans from one year to the next.
 
 ## Plan Types

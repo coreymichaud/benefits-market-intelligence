@@ -1,6 +1,8 @@
 # Benefits Market Intelligence
 
-**Where broker compensation in the U.S. employee benefits market is growing, who is capturing it, and where a brokerage should compete next.** Built on six years of public Form 5500 filings (2019–2024).
+[![CI](https://github.com/coreymichaud/benefits-market-intelligence/actions/workflows/ci.yml/badge.svg)](https://github.com/coreymichaud/benefits-market-intelligence/actions/workflows/ci.yml)
+
+**Where broker compensation in the U.S. employee benefits market is growing, who is capturing it, and where a brokerage should compete next.** Built on six years of public Form 5500 filings (form years 2019 to 2024).
 
 [![Benefits Market Intelligence dashboard](assets/dashboard.png)](https://benefits-market-intelligence.streamlit.app/)
 
@@ -50,7 +52,7 @@ Multi-line bundles (**+$1.3B, +70%**) and voluntary benefits (**+$391M, +106%**)
 
 ### 3. Carriers are paying brokers more through fees, especially outside medical
 
-Carrier-paid fees (bonuses, overrides and service fees) now make up **23.4%** of broker pay, up 1.9 points since 2019. Fees are becoming standard on disability (55% → 67% of contracts), multi-line bundles (55% → 65%) and life (51% → 61%), while medical, dental and stop-loss are flat.
+Carrier-paid fees (bonuses, overrides and service fees) now make up **23.4%** of broker pay, up 1.9 points since 2019. Fees are becoming standard on disability (55% to 67% of contracts), multi-line bundles (55% to 65%) and life (51% to 61%), while medical, dental and stop-loss are flat.
 
 <details>
 <summary>View chart</summary>
@@ -61,7 +63,7 @@ Carrier-paid fees (bonuses, overrides and service fees) now make up **23.4%** of
 
 ### 4. Employers are changing what they buy
 
-Self-funding is moving down-market: the share of **100–249-participant** health plans without insured medical rose **4.9 points**, the fastest of any size band, while it fell 1.6 points among 5,000+ employers. Voluntary benefits adoption rose in **every** size band, led by 1,000–4,999-participant plans (+9.7 points to 63%). Stop-loss, the product that makes self-funding possible, is not following suit for brokers: its pay pool shrank 3% and its take rate compressed 8%.
+Self-funding is moving down-market: the share of **100-249-participant** health plans without insured medical rose **4.9 points**, the fastest of any size band, while it fell 1.6 points among 5,000+ employers. Voluntary benefits adoption rose in **every** size band, led by 1,000-4,999-participant plans (+9.7 points to 63%). Stop-loss, the product that makes self-funding possible, is not following suit for brokers: its pay pool shrank 3% and its take rate compressed 8%.
 
 <details>
 <summary>View charts</summary>
@@ -73,12 +75,12 @@ Self-funding is moving down-market: the share of **100–249-participant** healt
 
 ### 5. Mid-market consolidators are taking share from the global consultancies
 
-Among large single-employer welfare plans, **OneDigital** grew from 45 to 166 client plans (+269%) to become the most-named firm, **AssuredPartners** grew 412% and **Marsh McLennan Agency** doubled. Over the same period WTW (−8%), Aon (−23%), Mercer (−28%) and HUB (−29%) slipped. The winners grew by absorbing local brokers' clients: OneDigital won 80 plans from local brokers for a net gain of 45, while WTW lost 79 plans and won 23 for a net loss of 56.
+Among large single-employer welfare plans, **OneDigital** grew from 45 to 166 client plans (+269%) to become the most-named firm, **AssuredPartners** grew 412% and **Marsh McLennan Agency** doubled. Over the same period WTW (-8%), Aon (-23%), Mercer (-28%) and HUB (-29%) slipped. The winners grew by absorbing local brokers' clients: OneDigital won 80 plans from local brokers for a net gain of 45, while WTW lost 79 plans and won 23 for a net loss of 56.
 
 <details>
 <summary>View charts</summary>
 
-![Broker leaderboard, 2019–2024](figures/analysis/05-broker-leaderboard-bump.png)
+![Broker leaderboard, 2019-2024](figures/analysis/05-broker-leaderboard-bump.png)
 ![Broker wins and losses](figures/analysis/09-broker-win-loss.png)
 
 </details>
@@ -105,7 +107,7 @@ For a benefits brokerage deciding where to invest its sales, product and talent:
 
 2. **Build a voluntary benefits practice aimed at employers under 1,000 participants.** Voluntary carries the highest take rate in the market (13.5%) and its pay pool doubled, yet only 28% to 52% of plans under 1,000 participants offer it, compared with 63% to 67% of larger employers. Closing that gap is the most direct path to new revenue from the existing book.
 
-3. **Get ahead of self-funding in the 100–499 segment, and price it as advice.** Smaller employers are leaving fully insured medical faster than anyone else, so level-funded and stop-loss capabilities are becoming table stakes. Because stop-loss take rates are compressing, protect revenue with fee-based consulting or by pairing funding strategy with ancillary placements rather than relying on stop-loss commissions.
+3. **Get ahead of self-funding in the 100-499 segment, and price it as advice.** Smaller employers are leaving fully insured medical faster than anyone else, so level-funded and stop-loss capabilities are becoming table stakes. Because stop-loss take rates are compressing, protect revenue with fee-based consulting or by pairing funding strategy with ancillary placements rather than relying on stop-loss commissions.
 
 4. **Point sales capacity at the fastest-growing markets.** Prioritize Arizona, Texas, Michigan, Illinois, Florida and Virginia, along with Construction (+64%), Admin & Support Services (+59%) and Professional & Technical Services (+55%, $1.1B). California is the largest market but is growing well below the national rate.
 
@@ -125,7 +127,7 @@ The interactive Streamlit dashboard puts every finding behind filters for year r
 
 ## Approach & Caveats
 
-- **Source:** Public DOL EFAST Form 5500 datasets for plan years 2019–2024, combining the main form (plan and sponsor details), Schedule A (insurance contracts, premiums, commissions and fees) and Schedule C (service provider compensation).
+- **Source:** Public DOL EFAST Form 5500 datasets for form years 2019 to 2024 (the year printed on the form), combining the main form (plan and sponsor details), Schedule A (insurance contracts, premiums, commissions and fees) and Schedule C (service provider compensation).
 - **Comparable years:** Each year includes only filings received within the standard deadline plus extension, deduplicated to one filing per plan per year, so older years with more late filings don't look artificially larger.
 - **Clean dollars:** Contracts with impossible self-reported values (negative pay, extreme pay per covered life) are screened out. This removes under 2.5% of contracts, and yearly totals move by less than 4% under alternative thresholds.
 - **Broker tracking:** 22 national firms are identified by name on Schedule C and followed year over year to classify each client win and loss.
@@ -157,7 +159,7 @@ flowchart LR
 | **Silver** | Six years combined per form, typed and standardized | Clean, query-ready history |
 | **Gold** | Trimmed to analysis-relevant columns | Fast, analytics-ready tables |
 
-Further documentation: [about the data](docs/about-the-data.md) · [data transformations](docs/data-transformations.md) · [data dictionary](docs/data_dictionary/) · [assumptions](docs/assumptions.md)
+Further documentation: [about the data](docs/about-the-data.md), [data transformations](docs/data-transformations.md), [data dictionary](docs/data_dictionary/README.md), [assumptions](docs/assumptions.md)
 
 ### Tech Stack
 
@@ -168,12 +170,14 @@ Further documentation: [about the data](docs/about-the-data.md) · [data transfo
 | **Plotly + Kaleido** | Interactive charts and static exports |
 | **Streamlit** | Interactive dashboard |
 | **Jupyter** | Exploratory and final analysis |
-| **uv / Ruff** | Environment management and code formatting |
+| **uv / Ruff** | Environment management, linting and formatting |
+| **pytest / GitHub Actions** | Tests (100% coverage of the pipeline package) and CI on every push and pull request |
 
 ### Repository Structure
 
 ```
 benefits-market-intelligence/
+├── .github/workflows/        # CI: lint, format check and tests
 ├── assets/                   # README images
 ├── data/exports/             # Gold tables as Parquet (powers the dashboard)
 ├── docs/                     # Data background, transformations, assumptions, data dictionary
@@ -181,9 +185,10 @@ benefits-market-intelligence/
 ├── notebooks/                # EDA per form/schedule and the final analysis notebook
 ├── src/benefits_market_intelligence/
 │   ├── config/               # Shared paths
-│   ├── elt/                  # Bronze → silver → gold pipeline
+│   ├── elt/                  # Bronze, silver and gold pipeline scripts
 │   └── visualizations/       # Shared chart styling and export
 ├── streamlit/                # Dashboard app (Market, Brokers, Opportunity)
+├── tests/                    # pytest suite for the pipeline, docs and dashboard
 ├── Makefile                  # Pipeline entry points (macOS/Linux)
 └── pyproject.toml            # Dependencies and project metadata
 ```
@@ -204,7 +209,7 @@ uv sync
 uv run streamlit run streamlit/app.py
 ```
 
-**Rebuild the data from source** (downloads the raw filings from the DOL and runs bronze → silver → gold):
+**Rebuild the data from source** (downloads the raw filings from the DOL and runs bronze, silver and gold):
 
 ```bash
 # macOS / Linux
@@ -216,7 +221,14 @@ uv run src/benefits_market_intelligence/elt/02_silver.py
 uv run src/benefits_market_intelligence/elt/03_gold.py
 ```
 
-Run `make help` to see all available targets. Charts are regenerated by running [`notebooks/analysis.ipynb`](notebooks/analysis.ipynb).
+**Run the checks** (the same ones CI runs):
+
+```bash
+make lint    # ruff lint and format check
+make tests   # pytest with coverage
+```
+
+The tests use small fake DOL files, so they don't download anything. Run `make help` to see all available targets. Charts are regenerated by running [`notebooks/analysis.ipynb`](notebooks/analysis.ipynb).
 
 ---
 
