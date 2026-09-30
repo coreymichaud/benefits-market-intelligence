@@ -22,3 +22,6 @@ data/*
 
 # Ruff
 .ruff_cache/
+# Tests
+.coverage
+.pytest_cache/
