@@ -1,5 +1,3 @@
-import plotly.express as px
-
 # Color palette
 PALETTE = [
     "#86BC25",  # D. Green
