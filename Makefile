@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help install data-bronze data-silver data all
+.PHONY: help install data-bronze data-silver data-gold data figures dashboard tests lint format all
 
 
 # ============ MISC COMMANDS ============
@@ -35,6 +35,20 @@ figures:  ## Re-run the analysis notebook and regenerate every chart
 
 dashboard:  ## Launch the Streamlit dashboard
 	uv run streamlit run streamlit/app.py
+
+
+# ============ QUALITY ============
+
+tests:  ## Run the test suite with coverage (fails under 100%)
+	uv run pytest
+
+lint:  ## Check linting and formatting, the same checks CI runs
+	uv run ruff check .
+	uv run ruff format --check .
+
+format:  ## Fix lint issues and reformat the code
+	uv run ruff check --fix .
+	uv run ruff format .
 
 
 # ============ FULL PIPELINE COMMAND ============
