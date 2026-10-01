@@ -82,28 +82,32 @@ STATE_NAMES = {
 
 # Order matters: a provider name takes the first firm whose pattern matches (as np.select does)
 BROKER_FIRMS = {
-    "WTW": r"WILLIS|TOWERS WATSON|^WTW",
-    "Mercer": r"MERCER",
-    "Aon": r"^AON|AON CONSULTING|AON RISK|AON HEWITT",
-    "Gallagher": r"GALLAGHER",
-    "Marsh McLennan Agency": r"MARSH & MC|MARSH AND MC|MARSH MC|MARSH USA",
-    "Lockton": r"LOCKTON",
-    "HUB International": r"^HUB |HUB INTERNATIONAL",
-    "USI": r"^USI |USI INSURANCE|USI CONSULTING",
-    "Brown & Brown": r"BROWN & BROWN|BROWN AND BROWN",
-    "OneDigital": r"ONEDIGITAL|DIGITAL INSURANCE",
-    "AssuredPartners": r"ASSUREDPARTNERS|ASSURED PARTNERS",
-    "Alliant": r"ALLIANT INS|ALLIANT EMPLOYEE|ALLIANT BEN",
-    "NFP": r"^NFP|NATIONAL FINANCIAL PARTNERS",
-    "CBIZ": r"CBIZ",
-    "Segal": r"SEGAL",
-    "McGriff": r"MCGRIFF|TRUIST INSURANCE",
-    "Acrisure": r"ACRISURE",
-    "Alera": r"ALERA",
-    "EPIC": r"EDGEWOOD PARTNERS|^EPIC ",
-    "Holmes Murphy": r"HOLMES MURPHY",
-    "IMA": r"^IMA |IMA FINANCIAL",
-    "Hylant": r"HYLANT",
+    "WTW": (r"\bWILLIS\b|\bTOWERS WATSON\b|^WTW\b|WILLISTOWERSWATSON", r"INVESTMENT"),
+    "Mercer": (r"\bMERCER\b", r"INVESTMENT|\bMERCER (?:COUNTY|ISLAND|UNIVERSITY)\b"),
+    "Aon": (r"^AON\b|^AONHEWITT|\bAON (?:CONSULTING|RISK|HEWITT)\b", r"INVESTMENT"),
+    "Gallagher": (
+        r"^GALLAGHER\b|\bARTHUR (?:J\.? )?GALLAGHER\b|\bA\.? ?J\.? GALLAGHER\b"
+        r"|\bGALLAGHER BENEFIT|, A GALLAGHER\b",
+        r"FIDUCIARY|INVESTMENT",
+    ),
+    "Marsh McLennan Agency": (r"\bMARSH (?:&|AND) ?MC|\bMARSH MC|\bMARSH USA\b", None),
+    "Lockton": (r"LOCKTON", None),
+    "HUB International": (r"^HUB\b|\bHUB INT", None),
+    "USI": (r"^USI\b|\bUSI (?:INSURANCE|CONSULTING)\b", None),
+    "Brown & Brown": (r"\bBROWN (?:&|AND) BROWN\b", None),
+    "OneDigital": (r"\bONE ?DIGITAL\b|\bDIGITAL INSURANCE\b", r"INVESTMENT"),
+    "AssuredPartners": (r"\bASSURED ?PARTNERS\b", None),
+    "Alliant": (r"\bALLIANT (?:INS|EMPLOYEE|BEN)", None),
+    "NFP": (r"^NFP|\bNATIONAL FINANCIAL PARTNERS\b", None),
+    "CBIZ": (r"CBIZ", r"\bCPAS?\b"),
+    "Segal": (r"\bSEGAL\b", r"\bMARCO\b"),
+    "McGriff": (r"\bMCGRIFF\b|\bTRUIST INSURANCE\b", None),
+    "Acrisure": (r"\bACRISURE\b", None),
+    "Alera": (r"\bALERA\b", None),
+    "EPIC": (r"\bEDGEWOOD PARTNERS\b|^EPIC ", None),
+    "Holmes Murphy": (r"\bHOLMES MURPHY\b", None),
+    "IMA": (r"^IMA\b|\bIMA FINANCIAL\b", None),
+    "Hylant": (r"\bHYLANT\b", None),
 }
 
 
@@ -295,11 +299,13 @@ VOLUNTARY = """
 
 
 def _firm_case() -> str:
-    whens = "\n".join(
-        f"WHEN regexp_matches(provider, '{pattern}') THEN '{firm}'"
-        for firm, pattern in BROKER_FIRMS.items()
-    )
-    return f"CASE {whens} END"
+    whens = []
+    for firm, (include, exclude) in BROKER_FIRMS.items():
+        test = f"regexp_matches(provider, '{include}')"
+        if exclude:
+            test += f" AND NOT regexp_matches(provider, '{exclude}')"
+        whens.append(f"WHEN {test} THEN '{firm}'")
+    return "CASE " + "\n".join(whens) + " END"
 
 
 # Schedule C providers on single-employer welfare plans, tagged to a national firm by name
