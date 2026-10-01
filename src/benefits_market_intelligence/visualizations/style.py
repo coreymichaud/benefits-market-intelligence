@@ -1,8 +1,8 @@
 # Color palette
 PALETTE = [
-    "#86BC25",  # D. Green
-    "#43B02A",  # Green 4
-    "#046A38",  # Green 6
+    "#86BC25",
+    "#43B02A",
+    "#046A38",
 ]
 
 # Accent colors
