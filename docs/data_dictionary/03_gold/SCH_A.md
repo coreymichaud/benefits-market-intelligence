@@ -3,12 +3,16 @@
 A subset of `silver.SCH_A` columns chosen by `03_gold.py`, with every row kept. Types are unchanged from silver. `03_gold.py` also writes this table to `data/exports/SCH_A.parquet`, which the Streamlit dashboard reads.
 
 - **Rows:** 2,015,924
-- **Columns:** 29
+- **Columns:** 33
 
 | Column | Type | Description |
 | --- | --- | --- |
 | `ACK_ID` | VARCHAR | Acknowledgment ID (PK) |
 | `INS_CARRIER_NAME` | VARCHAR | Insurance carrier name |
+| `INS_POLICY_FROM_DATE` | DATE | Policy start date |
+| `INS_POLICY_TO_DATE` | DATE | Policy end date |
+| `SCH_A_PLAN_YEAR_BEGIN_DATE` | DATE | Plan year start date |
+| `SCH_A_PLAN_YEAR_END_DATE` | DATE | Plan year end date |
 | `WLFR_BNFT_HEALTH_IND` | VARCHAR | Health benefit indicator |
 | `WLFR_BNFT_DENTAL_IND` | VARCHAR | Dental benefit indicator |
 | `WLFR_BNFT_VISION_IND` | VARCHAR | Vision benefit indicator |
