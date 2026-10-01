@@ -47,9 +47,9 @@ Each gold table is a `SELECT` of named columns from its silver table, with every
 
 | Table | Columns kept | Why |
 |---|---|---|
-| `gold.F_5500` | 24 of 141 | Plan identity (`ACK_ID`, sponsor EIN, plan number), plan year begin date, participant counts, business code, plan entity type, pension and welfare benefit codes, schedule-attached flags, mailing state and `FORM_YEAR` |
-| `gold.SCH_A` | 29 of 91 | Carrier name, benefit type flags, premium fields, broker commission and fee totals, persons covered, `FORM_ID` and `FORM_YEAR` |
-| `gold.SCH_C_P1_I2` | 9 of 23 | Provider name, EIN, relationship, service code field, direct and indirect compensation and `FORM_YEAR` |
+| `gold.F_5500` | 27 of 141 | Plan identity (`ACK_ID`, sponsor EIN, plan number), receipt date and amended-return flag for traceability, plan year begin date and short-plan-year flag, participant counts, business code, plan entity type, pension and welfare benefit codes, schedule-attached flags, mailing state and `FORM_YEAR` |
+| `gold.SCH_A` | 33 of 91 | Carrier name, policy year and plan year dates (to flag partial-year contracts), benefit type flags, premium fields, broker commission and fee totals, persons covered, `FORM_ID` and `FORM_YEAR` |
+| `gold.SCH_C_P1_I2` | 9 of 23 | `ROW_ORDER` (with `ACK_ID`, identifies each provider row), provider name, EIN, relationship, direct and indirect compensation and `FORM_YEAR`. The service code field is left out because it is empty in every year |
 
 The script then writes each gold table to `data/exports/<table>.parquet`. Those files are committed so the dashboard can run without rebuilding the warehouse.
 

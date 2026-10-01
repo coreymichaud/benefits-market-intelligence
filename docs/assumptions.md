@@ -1,6 +1,6 @@
 # Assumptions, Caveats & Limitations
 
-This document covers the rules and judgment calls behind the analysis in [`notebooks/analysis.ipynb`](../notebooks/analysis.ipynb) and the Streamlit dashboard, along with the limits they put on what the charts can say. Chart numbers follow the notebook sections. For background on the forms themselves, see [about-the-data.md](about-the-data.md). For how the tables were built, see [data-transformations.md](data-transformations.md).
+This document covers the rules and judgment calls behind the analysis in [`notebooks/analysis.ipynb`](../notebooks/analysis.ipynb) and the Streamlit dashboard, along with the limits they put on what the charts can say. Chart numbers follow the notebook sections. For background on the forms themselves, see [about-the-data.md](about-the-data.md). For how the tables were built, see [data-transformations.md](data-transformations.md). How firm and plan names are matched is in [name-matching.md](name-matching.md), and every source is listed in [sources.md](sources.md).
 
 ## Chart Reference
 
@@ -22,10 +22,10 @@ This document covers the rules and judgment calls behind the analysis in [`noteb
 ## Filing Window
 
 - **The rule:** each year keeps only filings received within 9.5 months of plan year end, which is the 7-month deadline plus the 2.5-month extension. Older years have had more time to collect late filings, so this puts every year on equal footing.
-- **Receipt date:** taken from the first 8 digits of `ACK_ID`, which is the EFAST receipt timestamp.
+- **Receipt date:** taken from the first 8 digits of `ACK_ID`, which is the EFAST receipt timestamp. Gold also keeps `DATE_RECEIVED`, the receipt date DOL records for each filing, so the two can be checked against each other.
 - **Plan year end:** assumed to be 12 months after `FORM_PLAN_YEAR_BEGIN_DATE`, because the actual end date isn't in gold. In SQL the cutoff is the begin date plus 21 months and 14 days. Short plan years get a slightly generous window.
 - **What gets dropped:** between about 11% and 17% of welfare filings in each year from 2019 to 2023, and about 8% for 2024. That group mixes three things: filings that really were late or delinquent, on-time filings that were amended later (see below), and catch-up filings for plan years several years back that DOL files under a newer form year. The catch-up group is about 27,000 welfare filings. Since the window is measured from the plan year begin date, all of them fall out, which also keeps them from being counted in the wrong year.
-- **Amended filings are a known leak.** DOL's "Latest" dataset keeps only the most recent version of each filing, so a plan that filed on time but amended later looks late and is dropped. Older years have had longer to pick up amendments, so the leak is probably a bit larger for them than for 2023 and 2024.
+- **Amended filings are a known leak.** DOL's "Latest" dataset keeps only the most recent version of each filing, so a plan that filed on time but amended later looks late and is dropped. Older years have had longer to pick up amendments, so the leak is probably a bit larger for them than for 2023 and 2024. See [Amended Filings & Traceability](#amended-filings--traceability).
 - **2024's lower exclusion rate isn't better compliance.** Late 2024 filings are still coming in, so fewer of them exist yet to be excluded.
 - **2024 may be slightly incomplete.** The data snapshot ends August 24, 2026. 2024 plan years that begin after about mid-November 2024 haven't reached the end of their window, so some of their on-time filings may not be in the data yet. That's about 2.5% of 2024 welfare filings, all of them non-calendar-year plans.
 
@@ -35,6 +35,13 @@ This document covers the rules and judgment calls behind the analysis in [`noteb
 - **One filing per plan per year:** filings are deduplicated to one per sponsor EIN, plan number and year, keeping the latest submission (highest `ACK_ID`). This runs after the filing window, so the filing that's kept is the latest on-time one.
 - **Form year as plan year:** DOL files every filing under its form year, the year printed on the form, and the analysis uses `FORM_YEAR` as the plan year. After the filing window, the plan year begins in `FORM_YEAR` for all but about 1,100 filings.
 - **Mergers and renumbering:** if a sponsor changes its EIN or renumbers a plan, the plan looks brand new. This mostly matters for chart 9, which follows plans from one year to the next.
+
+## Amended Filings & Traceability
+
+- **Default version:** the "Latest" files hold only the most recent filing DOL has received for each plan and year, and deduplication keeps the latest on-time one. An amended return therefore replaces the original, so every number uses the most recent accepted version.
+- **Counting amendments:** gold keeps `AMENDED_IND` from the main form (1 when the filer checked the amended return box), so the share of kept filings that are amendments can be reported for any year.
+- **Tracing a number to a filing:** every gold row keeps the IDs needed to find its source: `ACK_ID` in all three tables, plus `FORM_ID` for a Schedule A contract and `ROW_ORDER` for a Schedule C provider. An `ACK_ID` can be looked up on DOL's public [EFAST2 Form 5500 search](https://www.efast.dol.gov/5500Search/) to see the filed form.
+- **Earlier versions aren't loaded.** The original filing an amendment replaced is only in DOL's "All" files, which this project doesn't download. The limits that creates for the filing window are covered above.
 
 ## Plan Types
 
@@ -59,10 +66,17 @@ This document covers the rules and judgment calls behind the analysis in [`noteb
 - **Trends are still valid** as long as each carrier's counting convention stays stable over time.
 - **Plan-size bands use a different count.** `TOT_PARTCP_BOY_CNT` counts participants (employees and former employees) at the start of the plan year, not dependents. It sets the size bands in charts 4 and 8 and the 100-participant cutoff.
 
+## Policy Periods & Partial Years
+
+- **Two different periods.** Each Schedule A contract reports its policy year (`INS_POLICY_FROM_DATE` to `INS_POLICY_TO_DATE`) on the filing for the plan year (`SCH_A_PLAN_YEAR_BEGIN_DATE` to `SCH_A_PLAN_YEAR_END_DATE`) in which that policy year ends. A contract that renews July 1 lands on the plan year it ends in, so one plan year's Schedule A can cover parts of two calendar years.
+- **Partial years are flagged, never annualized.** A contract with a policy year shorter than 12 months (a new contract, a mid-year carrier change or a cancellation) reports only the premium and pay for that shorter period. A contract counts as partial-year when its policy period is under 360 days, and a filing counts as a short plan year when `SHORT_PLAN_YR_IND = 1`. All of these fields are in gold. No amount is ever scaled up to a full year; the current charts count partial-year records as reported.
+- **Schedule A and Schedule C are never added together.** Schedule A amounts follow the policy year, while Schedule C reports what a provider was paid during the plan year. The analysis only uses Schedule C to see which firms a plan names, never for dollars, so no number mixes the two periods.
+- **Year-over-year comparisons hold** as long as a plan keeps the same renewal date from one year to the next, which most do.
+
 ## Dollar Amounts
 
 - **Self-reported, and sometimes badly wrong.** Dollar fields contain extreme errors, including single contracts reporting over $500 trillion in commissions. The screens in the next section handle these.
-- **Blanks count as zero.** A missing commission or fee amount is treated as $0.
+- **Blanks count as zero, after checking.** A missing commission or fee amount is treated as $0. See [Blank Amounts](#blank-amounts) for the checks and what changes if blanks are dropped instead.
 - **Nominal dollars.** Nothing is adjusted for inflation, so the growth figures from 2019 to 2024 include it.
 
 ## Data Quality Screens
@@ -82,6 +96,102 @@ Schedule A contracts that fail any of these checks are dropped. The chart 7 scre
 - The first three screens remove just under 2.5% of contracts. Yearly totals move by less than 4% whether the pay cap is $1K or $5K.
 - Charts 4 and 8 don't use these screens. They only look at which benefits a contract covers, not at dollar amounts.
 - Charts 5 and 9 come from Schedule C and don't use them either.
+
+### Record Funnel
+
+What each rule keeps and removes, by form year. Filings are counted before any rule; plans kept are after the filing window and deduplication. The three Schedule A screens are applied in the order shown, so each contract is counted once.
+
+| Form year | Welfare filings | Plans kept | Schedule A contracts | Negative amounts | No usable lives | Over $2,500 per life | Contracts kept | Broker pay kept |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| 2019 | 87,298 | 76,861 | 250,407 | 587 | 4,927 | 465 | 244,428 | $5.35B |
+| 2020 | 89,494 | 74,961 | 247,127 | 556 | 4,527 | 555 | 241,489 | $5.40B |
+| 2021 | 87,530 | 72,737 | 243,956 | 601 | 4,777 | 464 | 238,114 | $5.52B |
+| 2022 | 88,559 | 74,467 | 251,058 | 564 | 4,576 | 591 | 245,327 | $6.14B |
+| 2023 | 89,267 | 77,287 | 265,998 | 629 | 5,422 | 529 | 259,418 | $6.84B |
+| 2024 | 85,549 | 78,180 | 274,741 | 643 | 5,771 | 479 | 267,848 | $7.54B |
+
+Contracts dropped for having no usable lives count also carry $36M to $54M a year of broker pay under $5M per contract, which is left out of the pool along with them.
+
+## Blank Amounts
+
+A blank commission or fee on a filed Schedule A is read as $0. Before relying on that, the blanks were checked (contracts on kept filings, before the screens):
+
+| Form year | Commission blank | Fee blank | Both blank | Carrier withheld info, both blank | Carrier withheld info, amounts filled in |
+|---|---:|---:|---:|---:|---:|
+| 2019 | 11.3% | 15.8% | 10.8% | 2.9% | 3.8% |
+| 2020 | 11.4% | 15.7% | 11.0% | 3.2% | 4.3% |
+| 2021 | 11.0% | 14.7% | 10.6% | 3.0% | 4.6% |
+| 2022 | 11.0% | 14.3% | 10.6% | 4.2% | 5.2% |
+| 2023 | 10.5% | 13.5% | 10.2% | 5.0% | 5.7% |
+| 2024 | 9.9% | 12.4% | 9.6% | 5.5% | 6.1% |
+
+- **Blanks are steady,** so they don't drive the trends.
+- **They aren't carriers refusing to report.** The "carrier failed to provide information" box (`INS_FAIL_PROVIDE_INFO_IND`) is checked about as often when the amounts are filled in as when they're blank.
+- **They behave like zeros.** Another 13% to 14% of contracts report an explicit $0 commission, and blanks cluster where carriers rarely pay brokers: in 2024, 47% of screened stop-loss contracts and 14% of medical contracts leave both amounts blank, against 4% to 5% of life and disability contracts.
+- **Totals are the same either way.** A zero adds nothing, so broker pay in charts 1, 2, 6 and 10 doesn't change if blank contracts are dropped instead.
+- **Rates do change.** A blank contract still adds premium to take rate and a "no fee" to fee adoption. With blank contracts dropped instead of read as zero:
+
+| Measure, 2019 to 2024 | Blanks as $0 (reported) | Blank contracts dropped |
+|---|---|---|
+| Market take rate | 3.32% to 3.78% | 4.12% to 4.57% |
+| Medical take rate | 2.12% to 2.08% | 2.75% to 2.73% |
+| Multi-line bundle take rate | 4.40% to 5.16% | 4.95% to 5.53% |
+| Voluntary & other take rate | 10.40% to 13.54% | 13.18% to 16.14% |
+| Stop-loss take rate | 3.56% to 3.26% | 4.80% to 4.90% |
+| Stop-loss fee adoption | 17% to 19% | 27% to 35% |
+
+- **What's reported:** blanks as $0, since the filer submitted the schedule and left the amount empty. Take rates and fee adoption are a floor. The direction of every trend holds either way except stop-loss: its take rate falls with blanks as zero and rises slightly with them dropped, so any stop-loss compression finding is low confidence.
+
+## Minimum Bases
+
+Every rule that hides or refuses to name a thin slice, in one place.
+
+| Where | Rule |
+|---|---|
+| Chart 4 (notebook) | No minimum needed: the smallest size band holds at least 1,478 plans in every year |
+| Chart 5 (notebook) | Shows only firms ranked in the top 10 in 2019 or 2024 |
+| Chart 6 (notebook) | The fastest-growing sector is picked from the 10 largest sectors by 2024 broker pay |
+| Chart 8 (notebook) | No minimum needed: the smallest size band holds at least 2,019 plans in every year |
+| Chart 9 (notebook) | Shows the 10 firms with the best 2024 rank |
+| Chart 10 (notebook) | States under $25M of 2024 broker pay are grey; only states with at least $50M in 2019 can be named fastest-growing |
+| Fee adoption (dashboard) | A line needs at least 20 contracts in a year to be shown |
+| Self-funding and voluntary (dashboard) | A size band needs at least 25 plans in a year to be shown |
+| State map (dashboard) | Grey under 0.33% of end-year broker pay; fastest-growing needs at least 0.93% of start-year pay |
+| Leaderboard (dashboard) | Needs at least 3 firms with plans in the end year |
+| Wins and losses (dashboard) | Needs at least 5 wins and losses combined |
+| Momentum map (dashboard) | A firm needs at least 3 plans in the start year and at least 5 plans kept or lost |
+
+## Metric Lineage
+
+How each measure is built. Every one starts from the kept filings: `gold.F_5500` filtered to welfare filings inside the filing window and deduplicated to one per plan and year.
+
+| Measure | Join | Rows used | Calculation |
+|---|---|---|---|
+| Broker pay (charts 1, 2, 6, 10) | Kept filings inner join `gold.SCH_A` on `ACK_ID` | Contracts passing the first three screens | Sum of `INS_BROKER_COMM_TOT_AMT` + `INS_BROKER_FEES_TOT_AMT`, blanks as $0 |
+| Covered lives (chart 1) | Same | Same | Sum of `INS_PRSN_COVERED_EOY_CNT`, cast to a number |
+| Pay per covered life (chart 1) | Same | Same | Broker pay divided by covered lives |
+| Fee share | Same | Same | Fees divided by broker pay |
+| Fee adoption (chart 3) | Same | Same, excluding unclassified contracts | Share of contracts in a line with fees above $0 |
+| Take rate (chart 7) | Same | Contracts passing all seven screens | Broker pay divided by premium (the larger of `WLFR_TOT_CHARGES_PAID_AMT` and `WLFR_TOT_EARNED_PREM_AMT`) |
+| Self-funding (chart 4) | Kept filings left join `gold.SCH_A` on `ACK_ID`, grouped per plan | Single-employer plans with welfare code 4A and 100+ participants | Share of plans with no contract flagged health, HMO, PPO or drug |
+| Voluntary adoption (chart 8) | Kept filings inner join `gold.SCH_A` on `ACK_ID`, grouped per plan | Single-employer plans with 100+ participants | Share of plans with a voluntary & other contract |
+| Plans served (chart 5) | Kept filings inner join `gold.SCH_C_P1_I2` on `ACK_ID` | Single-employer, welfare-only plans; providers matched to a firm | Distinct plan keys per firm and year |
+| Wins and losses (chart 9) | Each plan's firms joined to the same plan's firms the year before, on plan key and `FORM_YEAR - 1` | Plans listing a Schedule C provider in both years | Wins, losses and net as defined in chart 9 |
+| Industry and state (charts 6, 10) | From the kept filing | All of the above | First two digits of `BUSINESS_CODE` mapped to a NAICS sector; `SPONS_DFE_MAIL_US_STATE` |
+
+## Confidence Ratings
+
+Each recommendation carries a call and a confidence level, so a reader can tell a firm conclusion from a lead worth watching.
+
+- **Go:** the evidence supports acting on it now.
+- **No-go:** the evidence argues against investing in it.
+- **Monitor:** worth tracking, but not strong enough to act on yet.
+
+| Confidence | What it takes |
+|---|---|
+| High | Moves the same way in at least 4 of the 5 year-over-year steps, still holds with the five plans that moved most taken out, rests on reported amounts or counts rather than an inferred label, and clears the minimum bases |
+| Medium | Consistent, but relies on a proxy (self-funding read from a missing insured medical contract), an inferred label (voluntary benefits), a thin slice of filings (Schedule C), or changes size with how blanks are treated |
+| Low | Driven by a handful of sponsors, resting on a thin base, or changing direction under a reasonable alternative, such as the stop-loss take rate with blank contracts dropped |
 
 ## Definitions
 
@@ -117,14 +227,14 @@ Unclassified contracts are counted in the totals for charts 1, 6 and 10, shown a
 
 ### Chart 4: Self-Funding
 
-- **The measure:** the share of single-employer health plans (welfare code `4A`) with 100+ participants that have no insured medical contract on Schedule A. Stop-loss contracts don't count as insured medical, so level-funded plans read as self-funded.
+- **The measure:** the share of single-employer health plans (welfare code `4A`) with 100+ participants that have no insured medical contract on Schedule A. A stop-loss contract only counts as insured medical if the filer also checked a health, HMO, PPO or drug box on it, which about a quarter of stop-loss contracts do. So most level-funded plans read as self-funded, but some read as insured.
 - **It understates self-funding among large employers,** who often keep an insured HMO alongside a self-funded plan under the same plan number.
 - **Missing schedules read as self-funded.** A health plan with no Schedule A at all counts as self-funded, so a filer that should have attached one and didn't gets misclassified.
 
 ### Chart 5: Broker Leaderboard
 
-- **Firms are found by name.** Schedule C provider names are upper-cased, trimmed and matched against patterns for 22 national brokers and consultants (`BROKER_FIRMS` in the notebook). A name takes the first firm whose pattern matches.
-- **Matching is loose.** Most patterns are plain substrings, so a local agency that happens to share a name with a national firm gets counted with it. A firm also counts regardless of its role on the plan, so a consulting or actuarial relationship counts the same as a brokerage one.
+- **Firms are found by name.** Schedule C provider names are upper-cased, trimmed and matched against patterns for 22 national brokers and consultants (`BROKER_FIRMS`, identical in the notebook and `streamlit/figures/data.py`). A name takes the first firm whose pattern matches. The rules, exclusions and a match audit are in [name-matching.md](name-matching.md).
+- **Strict on names, loose on roles.** Patterns use word boundaries and rule out known look-alikes (investment arms, law firms, similarly spelled companies), but a firm counts regardless of its role on the plan, so a consulting or actuarial relationship counts the same as a brokerage one.
 - **Schedule C doesn't list every broker.** Providers only show up if they received at least $5K. The instructions also leave out anyone whose only pay was commissions and fees already listed on Schedule A, along with fees the employer paid directly and the plan didn't reimburse. A broker paid only through commissions on a fully insured plan can be missing entirely, so the chart counts relationships visible on Schedule C, not every plan a firm serves.
 - **Ranking:** firms are ranked each year by the number of plans naming them, with ties broken alphabetically. The chart shows any firm in the top 10 in either 2019 or 2024.
 - **Rebrands and acquisitions** (for example, NFP joining Aon in 2024) can shift counts.
@@ -171,3 +281,4 @@ The Streamlit app runs the notebook's SQL against the parquet files in `data/exp
 - **Wins and losses:** the dashboard also counts wins from plans that had no broker the year before, plus plans kept. Net wins still only use wins from local brokers and national rivals, minus losses.
 - **Retention:** plans kept divided by plans kept plus plans lost.
 - **Momentum map:** only firms with at least 3 plans in the start year and at least 5 plans kept or lost are placed. The retention split is the median across those firms.
+- **Every minimum base** the notebook and dashboard use is listed in [Minimum Bases](#minimum-bases).

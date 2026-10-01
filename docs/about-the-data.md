@@ -52,7 +52,7 @@ The paper form also lists each individual broker and what that broker was paid (
 Schedule C applies only to large plans (generally 100 or more participants at the beginning of the plan year) and certain direct filing entities. Part I, Item 2 requires the plan to list every person who received, directly or indirectly, **$5,000 or more** in reportable compensation in connection with services rendered to the plan or their position with the plan. It documents:
 
 - **Provider identity:** name and EIN (or address, for individuals without one)
-- **Relationship:** free text describing the provider's relationship to the employer or plan (for example, "broker" or "consultant"). The form also asks for service codes, but the code field in this dataset (`PROVIDER_OTHER_SRVC_CODES`) is empty in every year; DOL publishes the codes in a separate file that this project does not use, so the analysis reads the relationship text instead
+- **Relationship:** free text describing the provider's relationship to the employer or plan (for example, "broker" or "consultant"). The form also asks for service codes, but the code field in this dataset (PROVIDER_OTHER_SRVC_CODES) is empty in every year, so it is dropped from gold; DOL publishes the codes in a separate file that this project does not use, so the analysis reads the relationship text instead
 - **Compensation detail:** direct compensation (paid directly by the plan) reported separately from indirect compensation (received from a third party, such as revenue sharing, 12b-1 fees, or sub-transfer-agency fees)
 - **Formula vs. fixed-amount reporting:** indirect compensation reported either as a dollar amount or, in some cases, by the formula used to calculate it
 
