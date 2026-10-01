@@ -4,10 +4,13 @@ from benefits_market_intelligence.config.paths import DB_PATH, EXPORTS_PATH
 # F_5500 columns to include
 F_5500_top_cols = [
     "ACK_ID",
+    "DATE_RECEIVED",
+    "AMENDED_IND",
     "SPONS_DFE_EIN",
     "SPONS_DFE_PN",
     "SPONS_DFE_MAIL_US_ADDRESS1",
     "FORM_PLAN_YEAR_BEGIN_DATE",
+    "SHORT_PLAN_YR_IND",
     "TOT_PARTCP_BOY_CNT",
     "TOT_ACTIVE_PARTCP_CNT",
     "BUSINESS_CODE",
@@ -33,6 +36,10 @@ F_5500_top_cols = [
 SCH_A_top_cols = [
     "ACK_ID",
     "INS_CARRIER_NAME",
+    "INS_POLICY_FROM_DATE",
+    "INS_POLICY_TO_DATE",
+    "SCH_A_PLAN_YEAR_BEGIN_DATE",
+    "SCH_A_PLAN_YEAR_END_DATE",
     "WLFR_BNFT_HEALTH_IND",
     "WLFR_BNFT_DENTAL_IND",
     "WLFR_BNFT_VISION_IND",
@@ -65,9 +72,9 @@ SCH_A_top_cols = [
 # SCH_C_P1_I2 columns to include
 SCH_C_P1_I2_top_cols = [
     "ACK_ID",
+    "ROW_ORDER",
     "PROVIDER_OTHER_NAME",
     "PROVIDER_OTHER_EIN",
-    "PROVIDER_OTHER_SRVC_CODES",
     "PROVIDER_OTHER_RELATION",
     "PROVIDER_OTHER_DIRECT_COMP_AMT",
     "PROV_OTHER_INDIRECT_COMP_IND",
