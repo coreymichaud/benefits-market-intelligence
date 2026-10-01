@@ -6,6 +6,8 @@
 
 Check out the [live link here.](https://benefits-market-intelligence.streamlit.app/)
 
+**Data freshness:** covers form years 2019 to 2024, using every filing EFAST had received by **August 24, 2026** (the latest receipt date in the data). DOL rebuilds these files about monthly as late and amended filings arrive, so rerunning `make data` picks those up for the same six form years. It never adds 2025 or later. Form year 2024 is still filling in (see [assumptions](docs/assumptions.md#filing-window)).
+
 ---
 
 ## The Business Problem
@@ -73,7 +75,7 @@ Self-funding is moving down-market: the share of **100-249-participant** health 
 
 ### 5. Mid-market consolidators are taking share from the global consultancies
 
-Among large single-employer welfare plans, **OneDigital** grew from 45 to 166 client plans (+269%) to become the most-named firm, **AssuredPartners** grew 412% and **Marsh McLennan Agency** doubled. Over the same period WTW (-8%), Aon (-23%), Mercer (-28%) and HUB (-29%) slipped. The winners grew by absorbing local brokers' clients: OneDigital won 80 plans from local brokers for a net gain of 45, while WTW lost 79 plans and won 23 for a net loss of 56.
+Among large single-employer welfare plans, **OneDigital** grew from 45 to 171 client plans (+280%) to become the most-named firm, **AssuredPartners** grew 412% and **Marsh McLennan Agency** doubled. Over the same period WTW (-8%), Aon (-32%), Mercer (-28%) and HUB (-33%) slipped. The winners grew by absorbing local brokers' clients: OneDigital won 80 plans from local brokers for a net gain of 46, while WTW lost 79 plans and won 21 for a net loss of 58.
 
 <details>
 <summary>View charts</summary>
@@ -105,7 +107,7 @@ For a benefits brokerage deciding where to invest its sales, product and talent:
 
 2. **Build a voluntary benefits practice aimed at employers under 1,000 participants.** Voluntary carries the highest take rate in the market (13.5%) and its pay pool doubled, yet only 28% to 52% of plans under 1,000 participants offer it, compared with 63% to 67% of larger employers. Closing that gap is the most direct path to new revenue from the existing book.
 
-3. **Get ahead of self-funding in the 100-499 segment, and price it as advice.** Smaller employers are leaving fully insured medical faster than anyone else, so level-funded and stop-loss capabilities are becoming table stakes. Because stop-loss take rates are compressing, protect revenue with fee-based consulting or by pairing funding strategy with ancillary placements rather than relying on stop-loss commissions.
+3. **Get ahead of self-funding in the 100-499 segment, and price it as advice.** Smaller employers are leaving fully insured medical faster than anyone else, so level-funded and stop-loss capabilities are becoming table stakes. Stop-loss won't carry that revenue: its broker pay shrank 3% while the market grew 41%, and nearly half of stop-loss contracts report no broker pay at all. Protect revenue with fee-based consulting or by pairing funding strategy with ancillary placements rather than relying on stop-loss commissions.
 
 4. **Point sales capacity at the fastest-growing markets.** Prioritize Arizona, Texas, Michigan, Illinois, Florida and Virginia, along with Construction (+64%), Admin & Support Services (+59%) and Professional & Technical Services (+55%, $1.1B). California is the largest market but is growing well below the national rate.
 
@@ -128,7 +130,7 @@ The interactive Streamlit dashboard puts every finding behind filters for year r
 - **Source:** Public DOL EFAST Form 5500 datasets for form years 2019 to 2024 (the year printed on the form), combining the main form (plan and sponsor details), Schedule A (insurance contracts, premiums, commissions and fees) and Schedule C (service provider compensation).
 - **Comparable years:** Each year includes only filings received within the standard deadline plus extension, deduplicated to one filing per plan per year, so older years with more late filings don't look artificially larger.
 - **Clean dollars:** Contracts with impossible self-reported values (negative pay, extreme pay per covered life) are screened out. This removes under 2.5% of contracts, and yearly totals move by less than 4% under alternative thresholds.
-- **Broker tracking:** 22 national firms are identified by name on Schedule C and followed year over year to classify each client win and loss.
+- **Broker tracking:** 22 national firms are identified by name on Schedule C, with word-boundary patterns and exclusions for investment arms, law firms and look-alike names, and followed year over year to classify each client win and loss. See [`docs/name-matching.md`](docs/name-matching.md).
 - **Scope:** Results describe the large-group market (100+ participants), since most small insured plans are exempt from filing. Dollars are nominal, and Schedule C does not capture every broker relationship.
 
 Every rule and judgment call behind the numbers is documented in [`docs/assumptions.md`](docs/assumptions.md).
@@ -157,7 +159,7 @@ flowchart LR
 | **Silver** | Six years combined per form, typed and standardized | Clean, query-ready history |
 | **Gold** | Trimmed to analysis-relevant columns | Fast, analytics-ready tables |
 
-Further documentation: [about the data](docs/about-the-data.md), [data transformations](docs/data-transformations.md), [data dictionary](docs/data_dictionary/README.md), [assumptions](docs/assumptions.md)
+Further documentation: [about the data](docs/about-the-data.md), [data transformations](docs/data-transformations.md), [data dictionary](docs/data_dictionary/README.md), [assumptions](docs/assumptions.md), [name matching](docs/name-matching.md), [sources](docs/sources.md)
 
 ### Tech Stack
 
@@ -178,7 +180,7 @@ benefits-market-intelligence/
 ├── .github/workflows/        # CI: lint, format check and tests
 ├── assets/                   # README images
 ├── data/exports/             # Gold tables as Parquet (powers the dashboard)
-├── docs/                     # Data background, transformations, assumptions, data dictionary
+├── docs/                     # Data background, transformations, assumptions, name matching, sources, data dictionary
 ├── figures/                  # Exported charts (exploratory and final analysis)
 ├── notebooks/                # EDA per form/schedule and the final analysis notebook
 ├── src/benefits_market_intelligence/
