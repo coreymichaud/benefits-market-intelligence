@@ -1733,7 +1733,9 @@ def voluntary(t: Tables, f: Filters, height: int = 300) -> Chart:
                     color=color,
                     line=dict(color="white", width=1.5),
                 ),
-                hovertemplate=f"{band} participants<br>%{{x}}: %{{y:.1f}}% of plans<extra></extra>",
+                customdata=plans.loc[band, f.years],
+                hovertemplate=f"{band} participants<br>%{{x}}: %{{y:.1f}}% of plans"
+                "<br>%{customdata:,.0f} welfare plans<extra></extra>",
                 showlegend=False,
             )
         )
