@@ -9,7 +9,7 @@ anywhere.
 import streamlit as st
 
 from figures.data import load
-from figures.layout import freshness, header
+from figures.layout import header
 
 st.set_page_config(
     page_title="Benefits Market Intelligence",
