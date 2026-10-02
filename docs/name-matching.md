@@ -1,6 +1,6 @@
 # Name Matching
 
-How the analysis decides that two records belong to the same plan, and which Schedule C providers belong to a national brokerage firm. Everything here uses only the names and IDs in the three DOL datasets. The patterns live in `BROKER_FIRMS`, which must stay identical in [`notebooks/analysis.ipynb`](../notebooks/analysis.ipynb) and [`streamlit/figures/data.py`](../streamlit/figures/data.py).
+How the analysis decides that two records belong to the same plan, and which Schedule C providers belong to a national brokerage firm. Everything here uses only the names and IDs in the three DOL datasets. The patterns live in `BROKER_FIRMS`, which must stay identical in [`notebooks/analysis.ipynb`](../notebooks/analysis.ipynb) and [`streamlit/figures/constants.py`](../streamlit/figures/constants.py).
 
 ## Plans and Sponsors
 

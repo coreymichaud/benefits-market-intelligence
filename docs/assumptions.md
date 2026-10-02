@@ -233,7 +233,7 @@ Unclassified contracts are counted in the totals for charts 1, 6 and 10, shown a
 
 ### Chart 5: Broker Leaderboard
 
-- **Firms are found by name.** Schedule C provider names are upper-cased, trimmed and matched against patterns for 22 national brokers and consultants (`BROKER_FIRMS`, identical in the notebook and `streamlit/figures/data.py`). A name takes the first firm whose pattern matches. The rules, exclusions and a match audit are in [name-matching.md](name-matching.md).
+- **Firms are found by name.** Schedule C provider names are upper-cased, trimmed and matched against patterns for 22 national brokers and consultants (`BROKER_FIRMS`, identical in the notebook and `streamlit/figures/constants.py`). A name takes the first firm whose pattern matches. The rules, exclusions and a match audit are in [name-matching.md](name-matching.md).
 - **Strict on names, loose on roles.** Patterns use word boundaries and rule out known look-alikes (investment arms, law firms, similarly spelled companies), but a firm counts regardless of its role on the plan, so a consulting or actuarial relationship counts the same as a brokerage one.
 - **Schedule C doesn't list every broker.** Providers only show up if they received at least $5K. The instructions also leave out anyone whose only pay was commissions and fees already listed on Schedule A, along with fees the employer paid directly and the plan didn't reimburse. A broker paid only through commissions on a fully insured plan can be missing entirely, so the chart counts relationships visible on Schedule C, not every plan a firm serves.
 - **Ranking:** firms are ranked each year by the number of plans naming them, with ties broken alphabetically. The chart shows any firm in the top 10 in either 2019 or 2024.
@@ -273,7 +273,7 @@ Unclassified contracts are counted in the totals for charts 1, 6 and 10, shown a
 
 ## Dashboard Differences
 
-The Streamlit app runs the notebook's SQL against the parquet files in `data/exports` (see [`streamlit/figures/data.py`](../streamlit/figures/data.py)), so everything above applies to it. A few things work differently:
+The Streamlit app runs the notebook's SQL against the parquet files in `data/exports` (see [`streamlit/figures/queries.py`](../streamlit/figures/queries.py)), so everything above applies to it. A few things work differently:
 
 - **Filters:** every headline and chart recomputes for the selected year range, industry and state. The start and end of the range take the place of 2019 and 2024.
 - **Thin size bands are hidden.** The self-funding and voluntary views skip any size band with fewer than 25 plans in a year.
