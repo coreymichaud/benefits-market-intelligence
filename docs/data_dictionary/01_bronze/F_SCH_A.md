@@ -6,12 +6,12 @@ One table per form year, loaded as-is from DOL's "Latest" zip for that year by `
 
 | Table | Rows | Columns | Source |
 | --- | --- | --- | --- |
-| `bronze."F_SCH_A_2019_Latest"` | 329,228 | 90 | [F_SCH_A_2019_Latest.zip](https://askebsa.dol.gov/FOIA%20Files/2019/Latest/F_SCH_A_2019_Latest.zip) |
-| `bronze."F_SCH_A_2020_Latest"` | 337,555 | 90 | [F_SCH_A_2020_Latest.zip](https://askebsa.dol.gov/FOIA%20Files/2020/Latest/F_SCH_A_2020_Latest.zip) |
-| `bronze."F_SCH_A_2021_Latest"` | 333,481 | 90 | [F_SCH_A_2021_Latest.zip](https://askebsa.dol.gov/FOIA%20Files/2021/Latest/F_SCH_A_2021_Latest.zip) |
-| `bronze."F_SCH_A_2022_Latest"` | 339,654 | 90 | [F_SCH_A_2022_Latest.zip](https://askebsa.dol.gov/FOIA%20Files/2022/Latest/F_SCH_A_2022_Latest.zip) |
-| `bronze."F_SCH_A_2023_Latest"` | 339,696 | 90 | [F_SCH_A_2023_Latest.zip](https://askebsa.dol.gov/FOIA%20Files/2023/Latest/F_SCH_A_2023_Latest.zip) |
-| `bronze."F_SCH_A_2024_Latest"` | 336,310 | 90 | [F_SCH_A_2024_Latest.zip](https://askebsa.dol.gov/FOIA%20Files/2024/Latest/F_SCH_A_2024_Latest.zip) |
+| `bronze."F_SCH_A_2019_Latest"` | 329,205 | 90 | [F_SCH_A_2019_Latest.zip](https://askebsa.dol.gov/FOIA%20Files/2019/Latest/F_SCH_A_2019_Latest.zip) |
+| `bronze."F_SCH_A_2020_Latest"` | 337,515 | 90 | [F_SCH_A_2020_Latest.zip](https://askebsa.dol.gov/FOIA%20Files/2020/Latest/F_SCH_A_2020_Latest.zip) |
+| `bronze."F_SCH_A_2021_Latest"` | 333,425 | 90 | [F_SCH_A_2021_Latest.zip](https://askebsa.dol.gov/FOIA%20Files/2021/Latest/F_SCH_A_2021_Latest.zip) |
+| `bronze."F_SCH_A_2022_Latest"` | 339,557 | 90 | [F_SCH_A_2022_Latest.zip](https://askebsa.dol.gov/FOIA%20Files/2022/Latest/F_SCH_A_2022_Latest.zip) |
+| `bronze."F_SCH_A_2023_Latest"` | 339,966 | 90 | [F_SCH_A_2023_Latest.zip](https://askebsa.dol.gov/FOIA%20Files/2023/Latest/F_SCH_A_2023_Latest.zip) |
+| `bronze."F_SCH_A_2024_Latest"` | 337,663 | 90 | [F_SCH_A_2024_Latest.zip](https://askebsa.dol.gov/FOIA%20Files/2024/Latest/F_SCH_A_2024_Latest.zip) |
 
 ## Columns
 

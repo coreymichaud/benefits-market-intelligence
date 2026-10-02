@@ -6,12 +6,12 @@ One table per form year, loaded as-is from DOL's "Latest" zip for that year by `
 
 | Table | Rows | Columns | Source |
 | --- | --- | --- | --- |
-| `bronze."F_SCH_C_PART1_ITEM2_2019_Latest"` | 283,445 | 22 | [F_SCH_C_PART1_ITEM2_2019_Latest.zip](https://askebsa.dol.gov/FOIA%20Files/2019/Latest/F_SCH_C_PART1_ITEM2_2019_Latest.zip) |
-| `bronze."F_SCH_C_PART1_ITEM2_2020_Latest"` | 289,894 | 22 | [F_SCH_C_PART1_ITEM2_2020_Latest.zip](https://askebsa.dol.gov/FOIA%20Files/2020/Latest/F_SCH_C_PART1_ITEM2_2020_Latest.zip) |
-| `bronze."F_SCH_C_PART1_ITEM2_2021_Latest"` | 294,522 | 22 | [F_SCH_C_PART1_ITEM2_2021_Latest.zip](https://askebsa.dol.gov/FOIA%20Files/2021/Latest/F_SCH_C_PART1_ITEM2_2021_Latest.zip) |
-| `bronze."F_SCH_C_PART1_ITEM2_2022_Latest"` | 280,495 | 22 | [F_SCH_C_PART1_ITEM2_2022_Latest.zip](https://askebsa.dol.gov/FOIA%20Files/2022/Latest/F_SCH_C_PART1_ITEM2_2022_Latest.zip) |
-| `bronze."F_SCH_C_PART1_ITEM2_2023_Latest"` | 263,253 | 22 | [F_SCH_C_PART1_ITEM2_2023_Latest.zip](https://askebsa.dol.gov/FOIA%20Files/2023/Latest/F_SCH_C_PART1_ITEM2_2023_Latest.zip) |
-| `bronze."F_SCH_C_PART1_ITEM2_2024_Latest"` | 263,428 | 22 | [F_SCH_C_PART1_ITEM2_2024_Latest.zip](https://askebsa.dol.gov/FOIA%20Files/2024/Latest/F_SCH_C_PART1_ITEM2_2024_Latest.zip) |
+| `bronze."F_SCH_C_PART1_ITEM2_2019_Latest"` | 283,444 | 22 | [F_SCH_C_PART1_ITEM2_2019_Latest.zip](https://askebsa.dol.gov/FOIA%20Files/2019/Latest/F_SCH_C_PART1_ITEM2_2019_Latest.zip) |
+| `bronze."F_SCH_C_PART1_ITEM2_2020_Latest"` | 289,893 | 22 | [F_SCH_C_PART1_ITEM2_2020_Latest.zip](https://askebsa.dol.gov/FOIA%20Files/2020/Latest/F_SCH_C_PART1_ITEM2_2020_Latest.zip) |
+| `bronze."F_SCH_C_PART1_ITEM2_2021_Latest"` | 294,505 | 22 | [F_SCH_C_PART1_ITEM2_2021_Latest.zip](https://askebsa.dol.gov/FOIA%20Files/2021/Latest/F_SCH_C_PART1_ITEM2_2021_Latest.zip) |
+| `bronze."F_SCH_C_PART1_ITEM2_2022_Latest"` | 280,465 | 22 | [F_SCH_C_PART1_ITEM2_2022_Latest.zip](https://askebsa.dol.gov/FOIA%20Files/2022/Latest/F_SCH_C_PART1_ITEM2_2022_Latest.zip) |
+| `bronze."F_SCH_C_PART1_ITEM2_2023_Latest"` | 263,321 | 22 | [F_SCH_C_PART1_ITEM2_2023_Latest.zip](https://askebsa.dol.gov/FOIA%20Files/2023/Latest/F_SCH_C_PART1_ITEM2_2023_Latest.zip) |
+| `bronze."F_SCH_C_PART1_ITEM2_2024_Latest"` | 264,744 | 22 | [F_SCH_C_PART1_ITEM2_2024_Latest.zip](https://askebsa.dol.gov/FOIA%20Files/2024/Latest/F_SCH_C_PART1_ITEM2_2024_Latest.zip) |
 
 ## Columns
 

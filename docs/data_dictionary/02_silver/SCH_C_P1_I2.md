@@ -2,7 +2,7 @@
 
 The six `bronze."F_SCH_C_PART1_ITEM2_{year}_Latest"` tables stacked into one by `02_silver.py`, with `FORM_YEAR` added. Columns are in alphabetical order with `FORM_YEAR` last. A column missing from a year's file is null for that year. Columns in the script's numeric list are cast to `DOUBLE` and columns in its date list to `DATE` with `TRY_CAST`, so values that don't parse become null; everything else stays `VARCHAR`. No rows are filtered.
 
-- **Rows:** 1,675,037
+- **Rows:** 1,676,372
 - **Columns:** 23
 
 | Column | Type | Description |
