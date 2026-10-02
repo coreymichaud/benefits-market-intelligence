@@ -3,7 +3,8 @@
 import streamlit as st
 
 from figures import analyses, kpis
-from figures.data import LINES, load
+from figures.constants import LINES
+from figures.data import load
 from figures.layout import filters, panel, view_switch
 
 HEIGHT = 450

@@ -7,7 +7,8 @@ import streamlit as st
 
 from figures import calls
 from figures.analyses import Chart
-from figures.data import FIRST, LAST, SECTORS, STATE_NAMES, YEARS, Filters
+from figures.constants import FIRST, LAST, SECTORS, STATE_NAMES, YEARS
+from figures.data import Filters
 from figures.theme import PLOTLY_CONFIG
 
 ALL = "ALL"

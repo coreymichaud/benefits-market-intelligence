@@ -5,7 +5,8 @@ import pandas as pd
 import plotly.graph_objects as go
 
 from figures.analyses.common import Chart
-from figures.data import STATE_NAMES, Filters, Tables, subset
+from figures.constants import STATE_NAMES
+from figures.data import Filters, Tables, subset
 from figures.theme import (
     BLACK,
     FAINT,

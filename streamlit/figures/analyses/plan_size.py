@@ -5,7 +5,8 @@ import pandas as pd
 import plotly.graph_objects as go
 
 from figures.analyses.common import Chart, fit
-from figures.data import SELF_FUNDING_BANDS, VOLUNTARY_BANDS, Filters, Tables, subset
+from figures.constants import SELF_FUNDING_BANDS, VOLUNTARY_BANDS
+from figures.data import Filters, Tables, subset
 from figures.theme import (
     BLACK,
     GREY,

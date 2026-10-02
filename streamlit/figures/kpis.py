@@ -7,7 +7,8 @@ import pandas as pd
 import streamlit as st
 
 from figures.analyses import market_by_year
-from figures.data import STATE_NAMES, Filters, Tables, subset
+from figures.constants import STATE_NAMES
+from figures.data import Filters, Tables, subset
 from figures.theme import count, growth, money
 
 

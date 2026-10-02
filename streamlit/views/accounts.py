@@ -4,7 +4,8 @@ import pandas as pd
 import streamlit as st
 
 from figures import kpis
-from figures.data import SELF_FUNDING_BANDS, load
+from figures.constants import SELF_FUNDING_BANDS
+from figures.data import load
 from figures.layout import filters
 from figures.theme import money
 
