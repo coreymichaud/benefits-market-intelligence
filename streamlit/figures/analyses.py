@@ -1288,6 +1288,7 @@ def momentum_map(
 
 # 10. Where is broker compensation growing fastest?
 
+
 def _growth_without_top_plans(t: Tables, f: Filters, n: int = 5) -> pd.Series:
     """Each state's broker pay growth with its n fastest-growing plans taken out."""
     df = subset(t.plan_pay, f, state=False)
@@ -1769,7 +1770,6 @@ def voluntary(t: Tables, f: Filters, height: int = 300) -> Chart:
     )
     fig.update_layout(annotations=notes)
     return Chart(headline, caption, fig)
-
 
 
 # Carriers: who writes the insured premium
