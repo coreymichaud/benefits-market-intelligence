@@ -35,6 +35,7 @@ with left:
                 selection_mode="multi",
                 key="lines",
                 label_visibility="collapsed",
+                wrap=True,
                 bind="query-params",
                 persist_state="session",
             )
@@ -42,18 +43,42 @@ with left:
         )
     panel(analyses.pay_pool(t, f, lines, height=HEIGHT), key="pool")
 with right:
-    view = view_switch(
-        ["Growth by line", "Take rate", "Fee adoption"], key="market_view"
-    )
+    with st.container(horizontal=True, vertical_alignment="center", gap="small"):
+        view = view_switch(
+            ["Growth by line", "Take rate", "Fee adoption", "Carriers"],
+            key="market_view",
+        )
+        exclude_blank = False
+        if view in ("Take rate", "Fee adoption"):
+            exclude_blank = st.toggle(
+                "Leave out blank pay",
+                key="exclude_blank",
+                help="About 10% of contracts leave both commission and fees blank. By "
+                "default they count as \\$0; switch this on to leave them out instead. "
+                "Totals don't change, only rates.",
+            )
     if view == "Take rate":
-        panel(analyses.take_rate(t, f, lines, height=HEIGHT), key="take_rate")
+        panel(
+            analyses.take_rate(t, f, lines, height=HEIGHT, exclude_blank=exclude_blank),
+            key="take_rate",
+            call="medical",
+        )
     elif view == "Fee adoption":
-        panel(analyses.fee_adoption(t, f, lines, height=HEIGHT), key="fees")
+        panel(
+            analyses.fee_adoption(
+                t, f, lines, height=HEIGHT, exclude_blank=exclude_blank
+            ),
+            key="fees",
+            call="bundles",
+        )
+    elif view == "Carriers":
+        panel(analyses.carrier_share(t, f, lines, height=HEIGHT), key="carriers")
     else:
         panel(
             analyses.growth_bridge(t, f, lines, height=HEIGHT),
             key=f"bridge_{'_'.join(sorted(lines))}",
             on_click=_toggle_line,
+            call="bundles",
         )
 
 with kpi_strip:

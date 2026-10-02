@@ -49,6 +49,21 @@ with cols[0]:
         st.caption(
             f"Ranked {rank} of {len(BROKER_FIRMS)} national firms by plans served in {f.end}."
         )
+    # The provider names that count toward this firm, so a reader can check the matching
+    names = t.firm_names[t.firm_names["firm"] == firm].nlargest(12, "plan_years")
+    with st.popover("Names counted", icon=":material/badge:", width="content"):
+        st.caption(
+            f"Schedule C provider names matched to {firm}, 2019-2024, by plan-years. "
+            "Rules and exclusions: docs/name-matching.md."
+        )
+        st.dataframe(
+            names[["provider", "plan_years"]],
+            hide_index=True,
+            column_config={
+                "provider": st.column_config.TextColumn("Name on the filing"),
+                "plan_years": st.column_config.NumberColumn("Plan-years", format="%d"),
+            },
+        )
 kpis.render(kpis.broker(stats, firm, f), cols[1:])
 
 left, right = st.columns([5.5, 6.5], gap="large")
@@ -59,12 +74,14 @@ with left:
             analyses.win_loss(t, f, firm, height=HEIGHT),
             key=f"wins_{firm}",
             on_click=_focus,
+            call="consolidators",
         )
     else:
         panel(
             analyses.momentum_map(t, f, firm, height=HEIGHT),
             key=f"momentum_{firm}",
             on_click=_focus,
+            call="consolidators",
         )
 with right:
     st.space(28)  # lines the headline up with the one under the view switch
