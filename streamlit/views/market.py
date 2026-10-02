@@ -22,7 +22,7 @@ def _toggle_line(point: dict) -> None:
         )
 
 
-# The KPIs sit above the line filter but depend on it, so they are filled in at the end
+# KPIs are above the line filter but use it, so they get filled in last
 kpi_strip = st.container()
 
 left, right = st.columns([7, 5], gap="large")

@@ -1,7 +1,6 @@
-"""Reference data shared by the queries, the charts and the filters.
+"""Constants used across the dashboard.
 
-Years, lines of coverage, plan size bands, NAICS sectors, state names and the patterns that tag
-Schedule C providers to a national broker firm.
+Years, lines of coverage, plan size bands, sectors, states and the broker firm patterns.
 """
 
 YEARS = list(range(2019, 2025))
@@ -70,10 +69,10 @@ STATE_NAMES = {
     "WA": "Washington", "WV": "West Virginia", "WI": "Wisconsin", "WY": "Wyoming",
 }  # fmt: skip
 
-# Order matters: a provider name takes the first firm whose pattern matches (as np.select does).
-# Each firm has a pattern the name must match and, optionally, a pattern that rules it out
-# (investment arms, law firms, look-alike names). \b is a word boundary, so ALERA no longer
-# matches SALERA. Keep in sync with the notebook; rules and examples are in docs/name-matching.md.
+# Order matters since a name goes to the first firm it matches (same as np.select). Each firm
+# has a pattern to match and sometimes one to exclude, like investment arms, law firms or
+# similar names. \b is a word boundary so ALERA doesn't match SALERA. Has to match the notebook,
+# rules and examples are in docs/name-matching.md
 BROKER_FIRMS = {
     "WTW": (r"\bWILLIS\b|\bTOWERS WATSON\b|^WTW\b|WILLISTOWERSWATSON", r"INVESTMENT"),
     "Mercer": (r"\bMERCER\b", r"INVESTMENT|\bMERCER (?:COUNTY|ISLAND|UNIVERSITY)\b"),

@@ -17,8 +17,8 @@ st.set_page_config(
     layout="wide",
 )
 
-# Pages live in views/ rather than pages/: a pages/ folder next to the entrypoint turns on
-# Streamlit's legacy navigation, which breaks direct links such as /brokers.
+# Using views/ instead of pages/ since a pages/ folder turns on Streamlit's old navigation,
+# which breaks direct links like /brokers
 PAGES = [
     st.Page(
         "views/market.py", title="Market", icon=":material/payments:", default=True
@@ -30,7 +30,7 @@ PAGES = [
     st.Page("views/accounts.py", title="Accounts", icon=":material/table_view:"),
 ]
 
-# Page links go in the header row; Streamlit adds padding when they sit in its top bar
+# Page links are in the header row since Streamlit adds extra padding in its top bar
 page = st.navigation(PAGES, position="hidden")
 tables = load()
 # Accounts lists each plan's latest filing, so the year range doesn't apply there

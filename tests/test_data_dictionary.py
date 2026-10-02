@@ -1,4 +1,4 @@
-"""Keep docs/data_dictionary in line with the pipeline code and, when it exists, the warehouse."""
+"""Checks that docs/data_dictionary matches the pipeline code and the warehouse if it exists."""
 
 import ast
 import re

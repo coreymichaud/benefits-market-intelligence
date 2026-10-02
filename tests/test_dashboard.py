@@ -1,6 +1,6 @@
-"""Smoke tests: every dashboard page renders against the committed exports without an error.
+"""Smoke tests that every dashboard page loads without errors using the committed exports.
 
-The dashboard is not part of the coverage target; these only catch pages that break.
+The dashboard isn't part of the coverage target, these just catch pages that break.
 """
 
 from pathlib import Path

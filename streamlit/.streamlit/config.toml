@@ -1,5 +1,4 @@
-# Streamlit reads this from the directory it is launched in. Community Cloud launches from the
-# repository root, so keep this file here rather than inside streamlit/.
+# Streamlit reads this from app.py's folder, so it works no matter where the app is launched from
 
 [client]
 toolbarMode = "minimal"

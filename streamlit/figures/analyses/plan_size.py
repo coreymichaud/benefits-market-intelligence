@@ -1,4 +1,4 @@
-"""Adoption by plan size band: self-funding and voluntary benefits."""
+"""Self-funding and voluntary benefits adoption by plan size (analyses 4 and 8)."""
 
 import numpy as np
 import pandas as pd
@@ -26,9 +26,8 @@ def _band_rates(
     df: pd.DataFrame, bands: list[str], f: Filters, numerator: str
 ) -> pd.DataFrame:
     agg = df.groupby(["band", "year"])[[numerator, "plans"]].sum()
-    agg = agg[
-        agg["plans"] >= 25
-    ]  # skip unstable cells when a filter leaves very few plans
+    # Skip cells with too few plans to be reliable
+    agg = agg[agg["plans"] >= 25]
     rates = (
         (agg[numerator] / agg["plans"] * 100)
         .unstack("year")
@@ -38,7 +37,7 @@ def _band_rates(
 
 
 def _band_plans(df: pd.DataFrame, rates: pd.DataFrame, f: Filters) -> pd.DataFrame:
-    """Plans behind each band and year, lined up with the rates for hover text."""
+    """Plan counts by band and year for the hover text."""
     plans = df.groupby(["band", "year"])["plans"].sum().unstack("year")
     return plans.reindex(index=rates.index, columns=f.years).fillna(0)
 

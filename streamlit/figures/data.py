@@ -1,8 +1,7 @@
-"""Aggregate tables built from the Form 5500 parquet exports.
+"""Loads the aggregate tables from the Form 5500 parquet exports.
 
-The SQL lives in queries.py and follows notebooks/analysis.ipynb. DuckDB reads the parquet files
-once per server process and only the aggregates (plus one row per plan for the account list)
-stay in memory.
+The SQL is in queries.py. DuckDB reads the parquet files once per server process and only the
+aggregates (plus one row per plan for the accounts page) are kept in memory.
 """
 
 import tempfile
@@ -38,7 +37,7 @@ EXPORTS = Path(__file__).resolve().parents[2] / "data" / "exports"
 
 @dataclass(frozen=True)
 class Tables:
-    """Aggregates behind every chart. Shared across sessions, so never modify them."""
+    """Tables behind every chart. They're shared across sessions so don't modify them."""
 
     contracts: pd.DataFrame  # year, line, sector, state, commissions, fees, lives, ...
     carriers: pd.DataFrame  # year, carrier, line, sector, state, contracts, tr_premium
@@ -76,7 +75,7 @@ def _accounts(df: pd.DataFrame) -> pd.DataFrame:
         band=_band(df["participants"]),
     ).drop(columns="naics_2")
     df["state"] = df["state"].fillna("")
-    # Peer benchmark: the median take rate among plans in the same size band
+    # Median take rate of plans in the same size band, used as a benchmark
     df["band_take_rate"] = df.groupby("band")["take_rate"].transform("median")
     return df.sort_values("broker_pay", ascending=False, ignore_index=True)
 
@@ -158,7 +157,7 @@ def subset(
     state: bool = True,
     years: bool = True,
 ) -> pd.DataFrame:
-    """Apply the global filters. Charts that are the filter's own picker opt out of that filter."""
+    """Applies the global filters. Charts used to pick a filter (like the state map) can skip it."""
     mask = pd.Series(True, index=df.index)
     if years:
         mask &= df["year"].between(f.start, f.end)

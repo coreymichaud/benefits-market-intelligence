@@ -1,4 +1,4 @@
-"""How brokers are paid: carrier-paid fees vs. commissions, and pay as a share of premium."""
+"""Fee adoption and take rate by line of coverage (analyses 3 and 7)."""
 
 import numpy as np
 import plotly.graph_objects as go
@@ -36,7 +36,7 @@ def fee_adoption(
         ["fee_contracts", "contracts", "blank_contracts"]
     ].sum()
     if exclude_blank:
-        # Contracts with both amounts blank never have fees, so only the base shrinks
+        # Blank contracts never have fees, so only the contract count changes
         agg["contracts"] = agg["contracts"] - agg["blank_contracts"]
     agg = agg[agg["contracts"] >= 20]
     fee_mix = (agg["fee_contracts"] / agg["contracts"] * 100).unstack("year")
@@ -136,7 +136,7 @@ def take_rate(
     df = subset(t.contracts, f)
     df = df[df["line"] != "Unclassified"]
     if exclude_blank:
-        # Blank-pay contracts add premium but no pay, so dropping them only shrinks premium
+        # Blank contracts have premium but no pay, so only premium changes
         df = df.assign(tr_premium=df["tr_premium"] - df["blank_tr_premium"])
     agg = df.groupby(["line", "year"])[["tr_compensation", "tr_premium"]].sum()
     agg = agg[agg["tr_premium"] > 0]
@@ -186,7 +186,7 @@ def take_rate(
     if exclude_blank:
         caption += " Contracts that left both pay amounts blank are left out."
 
-    # Three panels per row keeps each label readable on a laptop-width screen
+    # 3 panels per row so the labels are readable on a laptop
     n_cols = 3
     n_rows = int(np.ceil(len(rates) / n_cols))
     height += 45 * max(n_rows - 2, 0)
@@ -249,8 +249,8 @@ def take_rate(
                 yref=f"y{axis} domain",
                 xanchor="left",
                 yanchor="bottom",
-                # The change sits next to the name rather than in the corner, so the two
-                # can't collide when the panels are narrow
+                # Change goes next to the name instead of the corner so they don't overlap
+                # on narrow panels
                 text=f"<b>{line}</b> <span style='color:{GREY if dim else color}'>"
                 f"<b>{pct:+.0f}%</b></span><br>"
                 f"{rates.loc[line, f.start]:.2f}% to {rates.loc[line, f.end]:.2f}%",

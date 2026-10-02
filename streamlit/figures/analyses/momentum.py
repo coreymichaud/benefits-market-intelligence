@@ -1,4 +1,4 @@
-"""The broker momentum map and the quadrant badge the Brokers page shows for a firm."""
+"""Broker momentum map and the quadrant badge on the Brokers page."""
 
 import numpy as np
 import pandas as pd
@@ -27,7 +27,7 @@ QUADRANTS = {
 
 
 def momentum_status(stats: pd.DataFrame, firm: str) -> tuple[str, str, str] | None:
-    """Which momentum-map quadrant a firm sits in: (label, badge color, icon)."""
+    """Returns (label, badge color, icon) for the firm's quadrant on the momentum map."""
     if stats.empty or firm not in stats.index:  # no national firm serves this slice
         return None
     mapped = _momentum_firms(stats)
@@ -44,9 +44,8 @@ def momentum_status(stats: pd.DataFrame, firm: str) -> tuple[str, str, str] | No
 
 def _momentum_firms(stats: pd.DataFrame) -> pd.DataFrame:
     """Leaderboard firms with enough history to place on the momentum map."""
-    if (
-        stats.empty
-    ):  # firm_stats returns a frame with no columns when no firm serves the slice
+    # firm_stats returns an empty frame when no firm is in the filters
+    if stats.empty:
         return stats
     firms = leaderboard_firms(stats)
     return firms[(firms["plans_first"] >= 3) & (firms["kept"] + firms["lost"] >= 5)]
@@ -63,13 +62,13 @@ def _label_positions(
     height: float,
     reserved: tuple = (),
 ) -> list[str]:
-    """Pick a text position for each bubble label that avoids other labels and bubbles.
+    """Picks a label position for each bubble so labels don't overlap each other or the bubbles.
 
-    `reserved` holds (x, y, w, h) pixel boxes that labels should also avoid.
+    `reserved` is (x, y, w, h) pixel boxes that labels should also stay out of.
     """
     px = (x - x_range[0]) / (x_range[1] - x_range[0]) * width
     py = (y - y_range[0]) / (y_range[1] - y_range[0]) * height
-    pad = 4  # breathing room around each label, in pixels
+    pad = 4  # in pixels
     options = {
         "top center": lambda i, w: (px[i] - w / 2, py[i] + size[i] / 2 + 1, w, 14),
         "bottom center": lambda i, w: (px[i] - w / 2, py[i] - size[i] / 2 - 15, w, 14),
@@ -116,7 +115,7 @@ def _label_positions(
                 2 * sum(overlap(b, o) for o in placed)
                 + sum(overlap(b, bub) for j, bub in enumerate(bubbles) if j != i)
                 + rank * 0.5
-            )  # prefer the plainer positions when costs tie
+            )  # rank breaks ties toward the earlier positions
             spill = (
                 max(0, -b[0])
                 + max(0, b[0] + b[2] - width)
@@ -145,7 +144,7 @@ def _corner_boxes(width: float, height: float, w: float = 160, h: float = 16) ->
 def momentum_map(
     t: Tables, f: Filters, focus: str | None = None, height: int = 460
 ) -> Chart:
-    """Combines analyses 5 and 9: growth in plans served against client retention."""
+    """Analyses 5 and 9 combined, growth in plans served vs. client retention."""
     notes: list[dict] = []
     shapes: list[dict] = []
     stats = firm_stats(t, f)

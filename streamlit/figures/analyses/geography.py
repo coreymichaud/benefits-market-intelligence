@@ -1,4 +1,4 @@
-"""Where broker pay is growing, by plan sponsor state."""
+"""Broker pay growth by state (analysis 10)."""
 
 import numpy as np
 import pandas as pd

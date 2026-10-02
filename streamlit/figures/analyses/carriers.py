@@ -1,4 +1,4 @@
-"""Which carriers write the insured premium."""
+"""Carrier share of insured premium."""
 
 import plotly.graph_objects as go
 
@@ -17,7 +17,7 @@ from figures.theme import (
 
 
 def _carrier_label(name: str, width: int = 34) -> str:
-    """Filed carrier names are upper case and long; title-case and trim them for the axis."""
+    """Title-cases and shortens the filed carrier names for the axis."""
     label = name.title()
     return label if len(label) <= width else label[: width - 3].rstrip() + "..."
 
@@ -96,7 +96,7 @@ def carrier_share(
             textposition="outside",
             textfont=dict(size=11, color=BLACK),
             cliponaxis=False,
-            # A list of pairs keeps the counts numeric so the hover can format them
+            # List of pairs so the counts stay numbers and the hover can format them
             customdata=[
                 [name, n]
                 for name, n in zip(
@@ -111,7 +111,7 @@ def carrier_share(
     fig.update_layout(
         bargap=0.25,
         xaxis=dict(visible=False, range=[0, shown[f.end].max() * 1.45]),
-        # Full names stay as the categories so two carriers can't merge after trimming
+        # Full names as categories so two carriers don't merge after trimming
         yaxis=dict(
             showgrid=False,
             tickfont=dict(size=11),

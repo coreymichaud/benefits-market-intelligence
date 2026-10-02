@@ -22,8 +22,8 @@ GREEN_SCALE = [[0, "#F2F8E6"], [0.5, PALETTE[0]], [1, PALETTE[2]]]
 FONT = "Public Sans, Arial, sans-serif"
 USD = "&#36;"  # HTML-escaped $ so Plotly never treats $...$ as LaTeX
 
-# Stop Plotly from fading unclicked points; the page redraws its own highlight after a click.
-# Per-bar opacity is avoided for the same reason: with text labels it swallows the click event.
+# Stops Plotly from fading unclicked points since the page does its own highlighting. Not using
+# per-bar opacity either since it breaks clicks on bars with text labels
 KEEP_STYLE = dict(
     selected=dict(marker=dict(opacity=1)), unselected=dict(marker=dict(opacity=1))
 )
@@ -33,7 +33,7 @@ PLOTLY_CONFIG = {"displayModeBar": False, "scrollZoom": False, "responsive": Tru
 
 
 def base_theme(fig: go.Figure, height: int, margin: dict | None = None) -> go.Figure:
-    """House style. Titles are left off because the page prints the headline."""
+    """Base styling for every chart. No titles since the page shows the headline."""
     fig.update_layout(
         template="plotly_white",
         colorway=PALETTE,
@@ -104,7 +104,7 @@ def empty_figure(message: str, height: int) -> go.Figure:
 
 
 def money(v: float, decimals: int = 1, *, plotly: bool = True) -> str:
-    """$7.5B style. Plotly text needs the escaped $; Streamlit markdown needs a backslash."""
+    """Money like $7.5B. Plotly needs the escaped $ and Streamlit markdown needs a backslash."""
     dollar = USD if plotly else "\\$"
     sign = "-" if v < 0 else ""
     v = abs(float(v))

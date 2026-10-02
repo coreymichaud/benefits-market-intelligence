@@ -1,7 +1,7 @@
 """Dashboard versions of the analyses in notebooks/analysis.ipynb.
 
-Each builder returns a Chart whose headline is recomputed for the active filters. The numbered
-comments above each builder match the analysis numbers in the notebook.
+Each function returns a Chart with a headline based on the current filters. The numbers in the
+comments match the analysis numbers in the notebook.
 """
 
 from figures.analyses.carriers import carrier_share

@@ -106,8 +106,7 @@ with duckdb.connect(DB_PATH) as con:
         """
         )
 
-        # Saving exports to share. ZSTD keeps F_5500 under GitHub's 100 MB file limit now
-        # that it carries sponsor names.
+        # Saving exports to share. ZSTD compression keeps F_5500 under GitHub's 100 MB limit
         EXPORTS_PATH.mkdir(parents=True, exist_ok=True)
         con.execute(
             f"COPY gold.{table} TO '{EXPORTS_PATH / table}.parquet' "

@@ -13,7 +13,7 @@ t = load()
 f = filters()
 stats = analyses.firm_stats(t, f)
 
-# Firms present in the current slice, leaders first. The focus defaults to the leader.
+# Firms in the current filters, top ranked first. Defaults to the top firm
 firms = (
     stats.index[(stats["plans_last"] > 0) | (stats["plans_first"] > 0)].tolist()
     if len(stats)
@@ -50,7 +50,7 @@ with cols[0]:
         st.caption(
             f"Ranked {rank} of {len(BROKER_FIRMS)} national firms by plans served in {f.end}."
         )
-    # The provider names that count toward this firm, so a reader can check the matching
+    # Provider names matched to this firm so you can check the matching
     names = t.firm_names[t.firm_names["firm"] == firm].nlargest(12, "plan_years")
     with st.popover("Names counted", icon=":material/badge:", width="content"):
         st.caption(

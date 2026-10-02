@@ -1,4 +1,4 @@
-"""How big the broker pay pool is and which lines of coverage drive its growth."""
+"""Broker pay pool and growth by line of coverage (analyses 1 and 2)."""
 
 import numpy as np
 import pandas as pd
@@ -218,7 +218,7 @@ def growth_bridge(
         )
     caption = f"Change in broker pay (commissions and carrier-paid fees) by line of coverage, {f.start} to {f.end}. Click a line to filter the page."
 
-    # Build the bridge from bars so each step can be clicked and dimmed individually
+    # Bridge is made of bars so each step can be clicked and dimmed on its own
     labels, bases, heights, colors, texts, custom = [], [], [], [], [], []
     labels.append(f"{f.start}<br>total")
     bases.append(0), heights.append(total_first), colors.append(PALETTE[2])

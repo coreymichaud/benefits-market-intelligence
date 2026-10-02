@@ -1,4 +1,4 @@
-"""Which sponsor industries hold the largest and fastest-growing broker pay pools."""
+"""Broker pay by industry (analysis 6)."""
 
 import pandas as pd
 import plotly.graph_objects as go

@@ -103,15 +103,11 @@ def create_silver_table(
     date_cols: list[str],
 ) -> None:
     """
-    Combine yearly bronze tables into one silver table.
+    Combines the yearly bronze tables into one silver table.
 
-    Handles schema differences between years:
-    - Columns present in all years are combined normally.
-    - Columns missing from a year become NULL for that year.
-    - Numeric columns are cast to DOUBLE.
-    - Date columns are cast to DATE.
-    - All other columns remain VARCHAR.
-    - FORM_YEAR is added as an INTEGER.
+    Columns missing from a year are NULL for that year. Numeric columns are cast to DOUBLE, date
+    columns to DATE and everything else stays VARCHAR. FORM_YEAR is added for the year each row
+    came from.
     """
 
     years = range(2019, 2025)

@@ -1,7 +1,7 @@
-"""SQL behind the dashboard's aggregate tables.
+"""SQL for the dashboard tables.
 
-Same rules as notebooks/analysis.ipynb; table names point at parquet views instead of gold.*.
-data.load runs these in order, since later queries read temp tables built by earlier ones.
+Same rules as notebooks/analysis.ipynb but reads the parquet views instead of the gold tables.
+Order matters since some queries use temp tables made by earlier ones.
 """
 
 from figures.constants import BROKER_FIRMS, LAST
@@ -19,8 +19,8 @@ FILINGS = """
         SPONS_DFE_MAIL_US_STATE AS state
     FROM F_5500
     WHERE TYPE_WELFARE_BNFT_CODE IS NOT NULL
-      -- Filing-lag control: keep filings received within 9.5 months of plan year end
-      -- (7-month deadline + 2.5-month extension); ACK_ID starts with the EFAST receipt date
+      -- Only keep filings received within 9.5 months of plan year end (7 month deadline plus
+      -- 2.5 month extension). ACK_ID starts with the EFAST receipt date
       AND STRPTIME(LEFT(ACK_ID, 8), '%Y%m%d')
           <= FORM_PLAN_YEAR_BEGIN_DATE + INTERVAL 21 MONTH + INTERVAL 14 DAY
     QUALIFY ROW_NUMBER() OVER (
@@ -54,8 +54,8 @@ LINE_CASE = """
     END
 """
 
-# Every Schedule A contract on a kept filing, with the notebook's screens as flags. The
-# aggregates below filter on these flags, so each rule is written once.
+# All Schedule A contracts on kept filings, with the notebook's screens as flags so each rule
+# is only written once
 CONTRACTS_ALL = f"""
     WITH flagged AS (
         SELECT
@@ -77,7 +77,7 @@ CONTRACTS_ALL = f"""
             TRY_CAST(a.INS_PRSN_COVERED_EOY_CNT AS DOUBLE) AS lives,
             GREATEST(COALESCE(a.WLFR_TOT_CHARGES_PAID_AMT, 0),
                      COALESCE(a.WLFR_TOT_EARNED_PREM_AMT, 0)) AS premium,
-            -- Policy year under 360 days; null when the dates are missing. Never annualized.
+            -- Policy year under 360 days, null if the dates are missing. These aren't annualized
             DATE_DIFF('day', a.INS_POLICY_FROM_DATE, a.INS_POLICY_TO_DATE) + 1 < 360
                 AS partial_year,
             COALESCE(a.WLFR_BNFT_OTHER_IND = '1' OR a.WLFR_BNFT_INDEMNITY_IND = '1', FALSE)
@@ -90,9 +90,9 @@ CONTRACTS_ALL = f"""
         SELECT
             *,
             {LINE_CASE} AS line,
-            -- Same voluntary rule as the VOLUNTARY query: other or indemnity, no core line
+            -- Same voluntary rule as the VOLUNTARY query (other or indemnity with no core line)
             other_or_indemnity AND NOT (med OR sl OR den OR vis OR life OR dis) AS voluntary,
-            -- Data-quality screen: drop negative amounts, missing lives, and implausible $/life
+            -- Drop negative amounts, missing lives and unrealistic $/life
             commissions >= 0
                 AND fees >= 0
                 AND COALESCE(lives BETWEEN 1 AND 1000000, FALSE)
@@ -110,8 +110,8 @@ CONTRACTS_ALL = f"""
     FROM lined
 """
 
-# tr_* columns only count contracts that also pass the notebook's take-rate screen. blank_*
-# columns let the take rate and fee adoption views leave out contracts with blank pay.
+# tr_* columns only count contracts that pass the take rate screen. blank_* columns are for
+# leaving out blank pay contracts in the take rate and fee adoption views
 CONTRACTS = """
     SELECT
         year,
@@ -133,9 +133,8 @@ CONTRACTS = """
     GROUP BY ALL
 """
 
-# The 25 carriers with the most premium on the take-rate base, each labeled with the name it
-# files under most often. Built as its own table first so the contracts are only scanned once
-# per query, which keeps memory down.
+# Top 25 carriers by take rate premium, labeled with the name they file under the most. Made
+# as its own table so contracts only get scanned once, which saves memory
 TOP_CARRIERS = """
     SELECT
         carrier_key,
@@ -163,8 +162,8 @@ CARRIERS = """
     GROUP BY ALL
 """
 
-# Broker pay per plan and year, for checking how much of a state's growth comes from a few plans.
-# Plans are identified by a 64-bit hash of the plan key, which is all this needs and keeps it small.
+# Broker pay per plan and year, used to check if a state's growth comes from just a few plans.
+# Plan key is hashed to keep it small
 PLAN_PAY = """
     SELECT year, HASH(plan_key) AS plan_id, naics_2, state, SUM(commissions + fees) AS pay
     FROM contracts_all
@@ -356,9 +355,8 @@ FIRM_EVENTS = """
 """
 
 
-# One row per single-employer plan with 100+ participants, from its latest kept filing in the
-# last two form years: what it insures, with whom, what its brokers are paid and which national
-# firm it names on Schedule C
+# One row per single-employer plan with 100+ participants from its latest filing in the last
+# two years. Has coverage, carriers, broker pay and the national firm on Schedule C
 ACCOUNTS = f"""
     WITH latest AS (
         SELECT ACK_ID, FORM_YEAR, plan_key, participants, naics_2, state, welfare_codes

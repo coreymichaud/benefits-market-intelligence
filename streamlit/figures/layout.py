@@ -65,7 +65,7 @@ def header(pages: list, show_years: bool = True) -> Filters:
         [4.8, 1.35, 1.2, 1.0, 1.0], vertical_alignment="center", gap="medium"
     )
     with years:
-        # Always drawn so the selection survives a visit to a page that ignores it
+        # Always drawn so the selection is kept on pages that don't use it
         start, end = st.select_slider(
             "Form years",
             options=YEARS,
@@ -95,7 +95,7 @@ def header(pages: list, show_years: bool = True) -> Filters:
             bind="query-params",
             label_visibility="collapsed",
         )
-    # Sized to their icons rather than to a column share, so they keep their shape on any width
+    # Sized to the icons instead of a column width so they keep their shape
     with (
         buttons,
         st.container(
@@ -130,8 +130,8 @@ def header(pages: list, show_years: bool = True) -> Filters:
             anchor=False,
             width="content",
         )
-        # Drop the links so they sit level with the middle of the title's lowercase letters.
-        # Tuned for the 2.45rem title: raise it with a bigger title, lower it with a smaller one.
+        # Moves the links down to line up with the middle of the title. Based on the 2.45rem
+        # title size, so change it if the title size changes
         with st.container(gap=0, width="content"):
             st.space(LINK_OFFSET)
             with st.container(horizontal=True, gap="medium", width="content"):

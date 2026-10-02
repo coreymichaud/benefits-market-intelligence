@@ -1,7 +1,7 @@
-"""Shared fixtures: a throwaway project folder and fake DOL downloads.
+"""Shared fixtures for a temp project folder and fake DOL downloads.
 
-The pipeline scripts read their paths from benefits_market_intelligence.config.paths when
-they run, so pointing those at tmp_path keeps every test away from the real data folder.
+The pipeline scripts get their paths from benefits_market_intelligence.config.paths when they
+run, so pointing those at tmp_path keeps the tests out of the real data folder.
 """
 
 import csv
@@ -17,8 +17,8 @@ from benefits_market_intelligence.config import paths
 
 YEARS = range(2019, 2025)
 
-# Columns in each fake CSV. They cover everything 03_gold.py selects plus a few extras, so
-# silver's numeric, date, text and missing-column branches all run.
+# Columns in each fake CSV. Has everything 03_gold.py selects plus a few extras so silver's
+# numeric, date, text and missing column cases all run
 COLUMNS = {
     "F_5500": [
         "ACK_ID", "DATE_RECEIVED", "AMENDED_IND", "SPONS_DFE_EIN", "SPONS_DFE_PN",
@@ -51,8 +51,7 @@ COLUMNS = {
     ],
 }  # fmt: skip
 
-# DOL added these Form 5500 fields partway through the period; leaving them out of the first
-# two years mimics that
+# DOL added these Form 5500 fields partway through, so they're left out of the first two years
 LATE_COLUMNS = {"SCH_DCG_ATTACHED_IND", "SCH_MEP_ATTACHED_IND"}
 
 SAMPLE_VALUES = {
@@ -114,7 +113,7 @@ class FakeResponse:
 
 
 def dol_zip(url: str) -> bytes:
-    """What the DOL site would return for a dataset URL: one CSV plus a layout file."""
+    """Fake DOL download for a dataset URL with one CSV and a layout file."""
     dataset, year = re.search(r"/(F_[A-Z0-9_]+?)_(\d{4})_Latest\.zip$", url).groups()
     year = int(year)
     return zip_bytes(

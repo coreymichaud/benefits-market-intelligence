@@ -1,7 +1,4 @@
-"""National broker firms: plans served, ranks, wins and losses.
-
-firm_stats is shared with the momentum map and the broker KPIs.
-"""
+"""Broker firm stats, leaderboard and wins/losses (analyses 5 and 9)."""
 
 import numpy as np
 import pandas as pd
@@ -30,9 +27,9 @@ from figures.theme import (
 
 
 def firm_stats(t: Tables, f: Filters) -> pd.DataFrame:
-    """One row per firm: plans served and rank by year, plus wins and losses in the range.
+    """One row per firm with plans served and rank by year, plus wins and losses.
 
-    A move between two years is counted in the later year, as in the notebook.
+    A move between two years counts in the later year, same as the notebook.
     """
     plans = (
         subset(t.firm_plans, f)
@@ -83,7 +80,7 @@ def firm_stats(t: Tables, f: Filters) -> pd.DataFrame:
 
 
 def leaderboard_firms(stats: pd.DataFrame) -> pd.DataFrame:
-    """Firms in the top 10 at the start or end of the range (the notebook's bump chart set)."""
+    """Firms in the top 10 in the first or last year, same as the notebook's bump chart."""
     return stats[(stats["rank_first"] <= 10) | (stats["rank_last"] <= 10)]
 
 
@@ -318,7 +315,7 @@ def win_loss(
             **KEEP_STYLE,
         )
     )
-    # Legend-only swatches: the bars' own colors are faded for every firm but the focus
+    # Separate legend entries since the bar colors get faded when a firm is focused
     for name, color in [
         ("Won from local brokers", PALETTE[2]),
         ("Won from national rivals", ACCENT),

@@ -1,4 +1,4 @@
-"""The Chart every builder returns, plus the headline and axis helpers they share."""
+"""Chart class and helpers shared by the charts."""
 
 from dataclasses import dataclass
 
@@ -13,7 +13,7 @@ class Chart:
     figure: go.Figure
 
 
-# Friendlier names when a line of coverage sits mid-sentence
+# Lowercase names for when a line of coverage is used mid-sentence
 LINE_NAMES = {
     "Multi-line bundle": "multi-line bundles",
     "Voluntary & other": "voluntary benefits",
@@ -36,7 +36,7 @@ def moved(pct: float, only: bool = False) -> str:
 
 
 def fit(*candidates: str, limit: int) -> str:
-    """First headline that fits on one line of its panel (candidates go from richest to shortest)."""
+    """Returns the first headline that fits on one line. Candidates go from longest to shortest."""
     for text in candidates:
         if len(text) <= limit:
             return text

@@ -267,7 +267,7 @@ def opportunity(t: Tables, f: Filters) -> list[Kpi]:
     since = f"since {f.start}"
     out = []
 
-    # Where: the state card ignores the state filter (like the map) unless one is picked
+    # State card ignores the state filter (like the map) unless a state is picked
     states = subset(t.contracts, f, state=False)
     states = _pool(states[states["state"].isin(STATE_NAMES)], "state", f)
     us_growth = growth(states[f.end].sum(), states[f.start].sum())
