@@ -190,7 +190,7 @@ def broker(stats: pd.DataFrame, firm: str, f: Filters) -> list[Kpi]:
             "Net plan wins",
             f"{row['net']:+.0f}",
             f"{row['won']:.0f} won, {row['lost']:.0f} lost",
-            f"{f.start}–{f.end}",
+            f"{f.start}-{f.end}",
             trends["net"],
             "Plans that newly named the firm, minus plans that stopped naming it, among plans filing "
             "in consecutive years.",
@@ -357,8 +357,8 @@ def opportunity(t: Tables, f: Filters) -> list[Kpi]:
     )
     out.append(
         _share_kpi(
-            "Self-funded, 100–249 participants",
-            _share(health[health["band"] == "100–249"], "self_funded", f),
+            "Self-funded, 100-249 participants",
+            _share(health[health["band"] == "100-249"], "self_funded", f),
             f,
             "The same measure for the smallest plans in the data, where the shift is fastest.",
         )
