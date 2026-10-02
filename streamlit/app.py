@@ -35,5 +35,5 @@ page = st.navigation(PAGES, position="hidden")
 tables = load()
 # Accounts lists each plan's latest filing, so the year range doesn't apply there
 header(PAGES, show_years=page.title != "Accounts")
-#freshness(tables.latest_received)
+# freshness(tables.latest_received)
 page.run()
