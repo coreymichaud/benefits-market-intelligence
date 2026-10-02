@@ -47,11 +47,11 @@ Each gold table is a `SELECT` of named columns from its silver table, with every
 
 | Table | Columns kept | Why |
 |---|---|---|
-| `gold.F_5500` | 27 of 141 | Plan identity (`ACK_ID`, sponsor EIN, plan number), receipt date and amended-return flag for traceability, plan year begin date and short-plan-year flag, participant counts, business code, plan entity type, pension and welfare benefit codes, schedule-attached flags, mailing state and `FORM_YEAR` |
-| `gold.SCH_A` | 33 of 91 | Carrier name, policy year and plan year dates (to flag partial-year contracts), benefit type flags, premium fields, broker commission and fee totals, persons covered, `FORM_ID` and `FORM_YEAR` |
+| `gold.F_5500` | 29 of 141 | Plan identity (`ACK_ID`, sponsor EIN, plan number), sponsor name and mailing city for the dashboard's account list, receipt date and amended-return flag for traceability, plan year begin date and short-plan-year flag, participant counts, business code, plan entity type, pension and welfare benefit codes, schedule-attached flags, mailing state and `FORM_YEAR` |
+| `gold.SCH_A` | 35 of 91 | Carrier name, EIN and NAIC code (to group a carrier's filings), policy year and plan year dates (to flag partial-year contracts), benefit type flags, premium fields, broker commission and fee totals, persons covered, `FORM_ID` and `FORM_YEAR` |
 | `gold.SCH_C_P1_I2` | 9 of 23 | `ROW_ORDER` (with `ACK_ID`, identifies each provider row), provider name, EIN, relationship, direct and indirect compensation and `FORM_YEAR`. The service code field is left out because it is empty in every year |
 
-The script then writes each gold table to `data/exports/<table>.parquet`. Those files are committed so the dashboard can run without rebuilding the warehouse.
+The script then writes each gold table to `data/exports/<table>.parquet` with ZSTD compression. Sponsor names make `F_5500.parquet` much larger, and ZSTD keeps it under GitHub's 100 MB file limit. Those files are committed so the dashboard can run without rebuilding the warehouse.
 
 ## Row Counts
 
@@ -59,6 +59,6 @@ From the build behind the current `data/exports` files:
 
 | Dataset | 2019 | 2020 | 2021 | 2022 | 2023 | 2024 | Silver and gold |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| Form 5500 | 247,906 | 249,386 | 243,798 | 243,474 | 231,872 | 225,591 | 1,442,027 |
-| Schedule A | 329,228 | 337,555 | 333,481 | 339,654 | 339,696 | 336,310 | 2,015,924 |
-| Schedule C Part 1 Item 2 | 283,445 | 289,894 | 294,522 | 280,495 | 263,253 | 263,428 | 1,675,037 |
+| Form 5500 | 247,888 | 249,365 | 243,760 | 243,404 | 232,024 | 226,436 | 1,442,877 |
+| Schedule A | 329,205 | 337,515 | 333,425 | 339,557 | 339,966 | 337,663 | 2,017,331 |
+| Schedule C Part 1 Item 2 | 283,444 | 289,893 | 294,505 | 280,465 | 263,321 | 264,744 | 1,676,372 |
