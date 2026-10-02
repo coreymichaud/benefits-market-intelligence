@@ -8,7 +8,9 @@ F_5500_top_cols = [
     "AMENDED_IND",
     "SPONS_DFE_EIN",
     "SPONS_DFE_PN",
+    "SPONSOR_DFE_NAME",
     "SPONS_DFE_MAIL_US_ADDRESS1",
+    "SPONS_DFE_MAIL_US_CITY",
     "FORM_PLAN_YEAR_BEGIN_DATE",
     "SHORT_PLAN_YR_IND",
     "TOT_PARTCP_BOY_CNT",
@@ -36,6 +38,8 @@ F_5500_top_cols = [
 SCH_A_top_cols = [
     "ACK_ID",
     "INS_CARRIER_NAME",
+    "INS_CARRIER_EIN",
+    "INS_CARRIER_NAIC_CODE",
     "INS_POLICY_FROM_DATE",
     "INS_POLICY_TO_DATE",
     "SCH_A_PLAN_YEAR_BEGIN_DATE",
@@ -102,10 +106,12 @@ with duckdb.connect(DB_PATH) as con:
         """
         )
 
-        # Saving exports to share
+        # Saving exports to share. ZSTD keeps F_5500 under GitHub's 100 MB file limit now
+        # that it carries sponsor names.
         EXPORTS_PATH.mkdir(parents=True, exist_ok=True)
         con.execute(
-            f"COPY gold.{table} TO '{EXPORTS_PATH / table}.parquet' (FORMAT PARQUET);"
+            f"COPY gold.{table} TO '{EXPORTS_PATH / table}.parquet' "
+            "(FORMAT PARQUET, COMPRESSION ZSTD);"
         )
 
 
