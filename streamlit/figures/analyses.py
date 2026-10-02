@@ -103,7 +103,15 @@ def market_by_year(
         df = df[df["line"].isin(lines)]
     market = (
         df.groupby("year")[
-            ["commissions", "fees", "lives", "tr_premium", "tr_compensation"]
+            [
+                "commissions",
+                "fees",
+                "lives",
+                "tr_premium",
+                "tr_compensation",
+                "contracts",
+                "partial_contracts",
+            ]
         ]
         .sum()
         .reindex(f.years, fill_value=0)
@@ -141,9 +149,15 @@ def pay_pool(
         headline = f"Covered lives {_moved(lives_growth)} while broker pay {_moved(comp_growth, only=True)}"
     caption = (
         f"Commissions and carrier-paid fees on welfare-plan insurance contracts (Schedule A), "
-        f"{f.start}–{f.end}. The line is pay per covered life, which moved from "
+        f"{f.start} to {f.end}. The line is pay per covered life, which moved from "
         f"\\${first['comp_per_life']:.2f} to \\${last['comp_per_life']:.2f}."
     )
+    if last["partial_contracts"] > 0:
+        share = last["partial_contracts"] / last["contracts"] * 100
+        caption += (
+            f" {share:.0f}% of {f.end} contracts cover a policy year under 12 months and "
+            "are counted as reported, not annualized."
+        )
 
     scale, suffix = _unit(market["compensation"].max())
     x = [str(y) for y in market.index]
@@ -154,7 +168,9 @@ def pay_pool(
             y=market["commissions"] / scale,
             name="Commissions",
             marker_color=PALETTE[2],
-            hovertemplate=f"%{{x}}<br>Commissions {USD}%{{y:.2f}}{suffix}<extra></extra>",
+            customdata=market["contracts"],
+            hovertemplate=f"%{{x}}<br>Commissions {USD}%{{y:.2f}}{suffix}"
+            "<br>%{customdata:,.0f} contracts<extra></extra>",
         )
     )
     fig.add_trace(
@@ -355,15 +371,27 @@ def growth_bridge(
 
 
 def fee_adoption(
-    t: Tables, f: Filters, focus: list[str] | None = None, height: int = 400
+    t: Tables,
+    f: Filters,
+    focus: list[str] | None = None,
+    height: int = 400,
+    exclude_blank: bool = False,
 ) -> Chart:
     notes: list[dict] = []
     df = subset(t.contracts, f)
     df = df[df["line"] != "Unclassified"]
-    agg = df.groupby(["line", "year"])[["fee_contracts", "contracts"]].sum()
+    agg = df.groupby(["line", "year"])[
+        ["fee_contracts", "contracts", "blank_contracts"]
+    ].sum()
+    if exclude_blank:
+        # Contracts with both amounts blank never have fees, so only the base shrinks
+        agg["contracts"] = agg["contracts"] - agg["blank_contracts"]
     agg = agg[agg["contracts"] >= 20]
     fee_mix = (agg["fee_contracts"] / agg["contracts"] * 100).unstack("year")
     fee_mix = fee_mix.reindex(columns=f.years).dropna(subset=[f.start, f.end])
+    counts = (
+        agg["contracts"].unstack("year").reindex(index=fee_mix.index, columns=f.years)
+    )
     if fee_mix.empty:
         return Chart(
             "Not enough contracts for this selection",
@@ -390,7 +418,10 @@ def fee_adoption(
     else:
         headline = f"Carrier-paid fee adoption has not moved much since {f.start}"
     caption = "Contracts where the carrier paid the broker fees (bonuses, overrides, service fees), not just commissions."
+    if exclude_blank:
+        caption += " Contracts that left both pay amounts blank are left out."
 
+    counts = counts.loc[fee_mix.index]
     z = fee_mix[f.years].values
     z_max = np.ceil(np.nanmax(z) / 10) * 10
     rows = [
@@ -410,7 +441,8 @@ def fee_adoption(
             text=[[f"{v:.0f}%" if np.isfinite(v) else "" for v in row] for row in z],
             texttemplate="%{text}",
             textfont=dict(size=12),
-            hovertemplate="%{y}<br>%{x}: %{z:.1f}% of contracts<extra></extra>",
+            customdata=counts.fillna(0).values,
+            hovertemplate="%{y}<br>%{x}: %{z:.1f}% of %{customdata:,.0f} contracts<extra></extra>",
         )
     )
     for row_label, d in zip(rows, fee_mix["delta"]):
@@ -441,12 +473,19 @@ def fee_adoption(
 
 
 def take_rate(
-    t: Tables, f: Filters, focus: list[str] | None = None, height: int = 400
+    t: Tables,
+    f: Filters,
+    focus: list[str] | None = None,
+    height: int = 400,
+    exclude_blank: bool = False,
 ) -> Chart:
     notes: list[dict] = []
     shapes: list[dict] = []
     df = subset(t.contracts, f)
     df = df[df["line"] != "Unclassified"]
+    if exclude_blank:
+        # Blank-pay contracts add premium but no pay, so dropping them only shrinks premium
+        df = df.assign(tr_premium=df["tr_premium"] - df["blank_tr_premium"])
     agg = df.groupby(["line", "year"])[["tr_compensation", "tr_premium"]].sum()
     agg = agg[agg["tr_premium"] > 0]
     rates = (
@@ -492,15 +531,19 @@ def take_rate(
         f"Take rate is broker pay divided by premium (contracts under \\$250M). Market-wide: "
         f"{overall_rate[f.start]:.2f}% in {f.start}, {overall_rate[f.end]:.2f}% in {f.end}."
     )
+    if exclude_blank:
+        caption += " Contracts that left both pay amounts blank are left out."
 
-    n_cols = 4
+    # Three panels per row keeps each label readable on a laptop-width screen
+    n_cols = 3
     n_rows = int(np.ceil(len(rates) / n_cols))
+    height += 45 * max(n_rows - 2, 0)
     fig = make_subplots(
         rows=n_rows,
         cols=n_cols,
         shared_yaxes=True,
-        horizontal_spacing=0.035,
-        vertical_spacing=0.2,
+        horizontal_spacing=0.04,
+        vertical_spacing=0.42 / n_rows,
     )
     y_min = (
         np.floor(min(np.nanmin(rate_change.values), -5) / 10) * 10 - 3
@@ -554,23 +597,14 @@ def take_rate(
                 yref=f"y{axis} domain",
                 xanchor="left",
                 yanchor="bottom",
-                text=f"<b>{line}</b><br>{rates.loc[line, f.start]:.2f}% to {rates.loc[line, f.end]:.2f}%",
+                # The change sits next to the name rather than in the corner, so the two
+                # can't collide when the panels are narrow
+                text=f"<b>{line}</b> <span style='color:{GREY if dim else color}'>"
+                f"<b>{pct:+.0f}%</b></span><br>"
+                f"{rates.loc[line, f.start]:.2f}% to {rates.loc[line, f.end]:.2f}%",
                 showarrow=False,
                 align="left",
                 font=dict(size=11, color=GREY if dim else BLACK),
-            )
-        )
-        notes.append(
-            dict(
-                x=1,
-                y=1.0,
-                xref=f"x{axis} domain",
-                yref=f"y{axis} domain",
-                xanchor="right",
-                yanchor="bottom",
-                text=f"<b>{pct:+.0f}%</b>",
-                showarrow=False,
-                font=dict(size=13, color=GREY if dim else color),
             )
         )
     fig.update_xaxes(
@@ -1229,7 +1263,7 @@ def momentum_map(
     base_theme(fig, height, margin=dict(l=10, r=10, t=10, b=10))
     fig.update_layout(
         xaxis=dict(
-            title=f"Change in plans served, {f.start}–{f.end}",
+            title=f"Change in plans served, {f.start}-{f.end}",
             range=[x_lo, x_hi],
             tickvals=tick_ratios,
             ticktext=[f"{(2**r - 1) * 100:+.0f}%" for r in tick_ratios],
@@ -1254,6 +1288,23 @@ def momentum_map(
 
 # 10. Where is broker compensation growing fastest?
 
+def _growth_without_top_plans(t: Tables, f: Filters, n: int = 5) -> pd.Series:
+    """Each state's broker pay growth with its n fastest-growing plans taken out."""
+    df = subset(t.plan_pay, f, state=False)
+    df = df[df["year"].isin([f.start, f.end])]
+    pay = df.pivot_table(
+        index=["state", "plan_id"],
+        columns="year",
+        values="pay",
+        aggfunc="sum",
+        fill_value=0,
+        observed=True,
+    ).reindex(columns=[f.start, f.end], fill_value=0)
+    pay["change"] = pay[f.end] - pay[f.start]
+    top = pay.groupby(level="state", group_keys=False)["change"].nlargest(n).index
+    rest = pay.drop(top).groupby(level="state")[[f.start, f.end]].sum()
+    return growth(rest[f.end], rest[f.start])
+
 
 def state_map(t: Tables, f: Filters, height: int = 400) -> Chart:
     df = subset(t.contracts, f, state=False)
@@ -1273,6 +1324,7 @@ def state_map(t: Tables, f: Filters, height: int = 400) -> Chart:
         )
 
     by_state["growth"] = growth(by_state[f.end], by_state[f.start])
+    by_state["growth_ex5"] = _growth_without_top_plans(t, f).reindex(by_state.index)
     national = growth(by_state[f.end].sum(), by_state[f.start].sum())
     # Same cut-offs as the notebook ($25M / $50M on the full market), scaled to the current slice
     small = by_state[f.end] < by_state[f.end].sum() * 0.0033
@@ -1285,9 +1337,16 @@ def state_map(t: Tables, f: Filters, height: int = 400) -> Chart:
         f"{STATE_NAMES[largest]}, the largest market, {'lags' if lg < national else 'leads'} at {lg:+.0f}%"
     )
     cutoff = money(by_state[f.end].sum() * 0.0033, 0, plotly=False)
+    lead_ex5 = by_state.loc[fastest[0], "growth_ex5"] if fastest else np.nan
+    check = (
+        f" Without its five fastest-growing plans, {STATE_NAMES[fastest[0]]} grew "
+        f"{lead_ex5:+.0f}%."
+        if np.isfinite(lead_ex5)
+        else ""
+    )
     caption = (
-        f"Broker pay growth by plan sponsor state, {f.start}–{f.end}, against the U.S. rate of "
-        f"{national:+.0f}%. Grey: markets under {cutoff}. Click a state to filter."
+        f"Broker pay growth by plan sponsor state, {f.start} to {f.end}, against the U.S. rate "
+        f"of {national:+.0f}%.{check} Grey: markets under {cutoff}. Click a state to filter."
     )
 
     span = max(abs(national), 10)
@@ -1338,16 +1397,21 @@ def state_map(t: Tables, f: Filters, height: int = 400) -> Chart:
                     [STATE_NAMES[s] for s in big.index],
                     [money(v) for v in big[f.start]],
                     [money(v) for v in big[f.end]],
+                    [
+                        f"{v:+.0f}%" if np.isfinite(v) else "n/a"
+                        for v in big["growth_ex5"]
+                    ],
                 ]
             ),
             hovertemplate="<b>%{customdata[0]}</b><br>"
             + str(f.start)
             + ": %{customdata[1]}<br>"
             + str(f.end)
-            + ": %{customdata[2]}<br>Growth: %{z:+.1f}%<extra></extra>",
+            + ": %{customdata[2]}<br>Growth: %{z:+.1f}%<br>"
+            + "Without its 5 fastest-growing plans: %{customdata[3]}<extra></extra>",
             colorbar=dict(
                 title=dict(
-                    text=f"Growth<br>{f.start}–{f.end}", side="top", font=dict(size=11)
+                    text=f"Growth<br>{f.start}-{f.end}", side="top", font=dict(size=11)
                 ),
                 tickvals=[national - span, national, national + span],
                 ticktext=[
@@ -1507,9 +1571,16 @@ def _band_rates(
     return rates.dropna(subset=[f.start, f.end])
 
 
+def _band_plans(df: pd.DataFrame, rates: pd.DataFrame, f: Filters) -> pd.DataFrame:
+    """Plans behind each band and year, lined up with the rates for hover text."""
+    plans = df.groupby(["band", "year"])["plans"].sum().unstack("year")
+    return plans.reindex(index=rates.index, columns=f.years).fillna(0)
+
+
 def self_funding(t: Tables, f: Filters, height: int = 300) -> Chart:
     notes: list[dict] = []
-    rates = _band_rates(subset(t.health, f), SELF_FUNDING_BANDS, f, "self_funded")
+    health = subset(t.health, f)
+    rates = _band_rates(health, SELF_FUNDING_BANDS, f, "self_funded")
     if len(rates) < 2:
         return Chart(
             "Too few health plans for this selection",
@@ -1532,6 +1603,7 @@ def self_funding(t: Tables, f: Filters, height: int = 300) -> Chart:
     )
 
     bands = rates.index.tolist()
+    plans = _band_plans(health, rates, f)
     colors = YEAR_COLORS[-len(f.years) :]
     fig = go.Figure()
     for band in bands:
@@ -1558,7 +1630,9 @@ def self_funding(t: Tables, f: Filters, height: int = 300) -> Chart:
                     color=color,
                     line=dict(color="white", width=1.5),
                 ),
-                hovertemplate=f"{year}<br>%{{y}} participants<br>%{{x:.1f}}% self-funded<extra></extra>",
+                customdata=plans[year],
+                hovertemplate=f"{year}<br>%{{y}} participants<br>%{{x:.1f}}% self-funded"
+                "<br>%{customdata:,.0f} health plans<extra></extra>",
             )
         )
     for band, delta in rates["delta"].items():
@@ -1603,7 +1677,8 @@ BAND_COLORS = ["#A9D46F", PALETTE[0], PALETTE[1], "#2E8B3A", PALETTE[2]]
 
 def voluntary(t: Tables, f: Filters, height: int = 300) -> Chart:
     notes: list[dict] = []
-    adoption = _band_rates(subset(t.voluntary, f), VOLUNTARY_BANDS, f, "with_voluntary")
+    vol = subset(t.voluntary, f)
+    adoption = _band_rates(vol, VOLUNTARY_BANDS, f, "with_voluntary")
     if len(adoption) < 2:
         return Chart(
             "Too few welfare plans for this selection",
@@ -1639,6 +1714,7 @@ def voluntary(t: Tables, f: Filters, height: int = 300) -> Chart:
 
     fig = go.Figure()
     color_for = dict(zip(VOLUNTARY_BANDS, BAND_COLORS))
+    plans = _band_plans(vol, adoption, f)
     for band in adoption.index:
         y = adoption.loc[band, f.years]
         color = color_for[band]
@@ -1692,4 +1768,114 @@ def voluntary(t: Tables, f: Filters, height: int = 300) -> Chart:
         ),
     )
     fig.update_layout(annotations=notes)
+    return Chart(headline, caption, fig)
+
+
+
+# Carriers: who writes the insured premium
+
+
+def _carrier_label(name: str, width: int = 34) -> str:
+    """Filed carrier names are upper case and long; title-case and trim them for the axis."""
+    label = name.title()
+    return label if len(label) <= width else label[: width - 3].rstrip() + "..."
+
+
+def carrier_share(
+    t: Tables,
+    f: Filters,
+    lines: list[str] | None = None,
+    height: int = 400,
+    top_n: int = 10,
+) -> Chart:
+    df = subset(t.carriers, f)
+    if lines:
+        df = df[df["line"].isin(lines)]
+    df = df[df["year"].isin([f.start, f.end])]
+    premium = (
+        df.pivot_table(
+            index="carrier", columns="year", values="tr_premium", aggfunc="sum"
+        )
+        .reindex(columns=[f.start, f.end])
+        .fillna(0)
+    )
+    if premium.empty or premium[f.start].sum() <= 0 or premium[f.end].sum() <= 0:
+        return Chart(
+            "Not enough premium data for this selection",
+            "",
+            empty_figure("Too few contracts", height),
+        )
+
+    share = premium / premium.sum() * 100
+    share["delta"] = share[f.end] - share[f.start]
+    contracts = (
+        df[df["year"] == f.end]
+        .groupby("carrier")["contracts"]
+        .sum()
+        .reindex(share.index)
+    )
+    named = share.drop("Other carriers", errors="ignore").sort_values(
+        f.end, ascending=False
+    )
+    top5 = named[f.end].head(5).sum()
+    gainers = named[named["delta"] >= 0.5].sort_values("delta", ascending=False)
+    scope = (
+        f" for {join_names([_line_name(x) for x in lines])}"
+        if lines and len(lines) <= 2
+        else ""
+    )
+    gain = (
+        f"; {_carrier_label(gainers.index[0])} gained the most share"
+        if len(gainers)
+        else ""
+    )
+    headline = _fit(
+        f"The five largest carriers write {top5:.0f}% of insured premium{scope}{gain}",
+        f"The five largest carriers write {top5:.0f}% of insured premium{scope}",
+        limit=100,
+    )
+    caption = (
+        f"Share of premium by carrier in {f.end}, with the change since {f.start}. Each carrier "
+        "is one NAIC code, labeled with the name it files under most often, so affiliates of "
+        "the same parent company show separately."
+    )
+
+    shown = named.head(top_n).iloc[::-1]
+    colors = [trend_color(d, 0.3) if abs(d) >= 0.3 else MUTED for d in shown["delta"]]
+    fig = go.Figure(
+        go.Bar(
+            y=list(shown.index),
+            x=shown[f.end],
+            orientation="h",
+            marker=dict(color=colors),
+            text=[
+                f"{v:.1f}%  ({d:+.1f} pts)"
+                for v, d in zip(shown[f.end], shown["delta"])
+            ],
+            textposition="outside",
+            textfont=dict(size=11, color=BLACK),
+            cliponaxis=False,
+            # A list of pairs keeps the counts numeric so the hover can format them
+            customdata=[
+                [name, n]
+                for name, n in zip(
+                    shown.index, contracts.reindex(shown.index).fillna(0)
+                )
+            ],
+            hovertemplate="<b>%{customdata[0]}</b><br>%{x:.1f}% of premium"
+            "<br>%{customdata[1]:,.0f} contracts<extra></extra>",
+        )
+    )
+    base_theme(fig, height, margin=dict(l=10, r=10, t=10, b=10))
+    fig.update_layout(
+        bargap=0.25,
+        xaxis=dict(visible=False, range=[0, shown[f.end].max() * 1.45]),
+        # Full names stay as the categories so two carriers can't merge after trimming
+        yaxis=dict(
+            showgrid=False,
+            tickfont=dict(size=11),
+            tickvals=list(shown.index),
+            ticktext=[_carrier_label(c) for c in shown.index],
+        ),
+    )
     return Chart(headline, caption, fig)
