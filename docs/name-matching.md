@@ -1,6 +1,6 @@
 # Name Matching
 
-How the analysis decides that two records belong to the same plan, and which Schedule C providers belong to a national brokerage firm. Everything here uses only the names and IDs in the three DOL datasets. The patterns live in `BROKER_FIRMS`, which is identical in [`notebooks/analysis.ipynb`](../notebooks/analysis.ipynb) and [`streamlit/figures/data.py`](../streamlit/figures/data.py); `tests/test_firm_matching.py` fails if the two drift apart or if a known name stops matching the way it should.
+How the analysis decides that two records belong to the same plan, and which Schedule C providers belong to a national brokerage firm. Everything here uses only the names and IDs in the three DOL datasets. The patterns live in `BROKER_FIRMS`, which must stay identical in [`notebooks/analysis.ipynb`](../notebooks/analysis.ipynb) and [`streamlit/figures/data.py`](../streamlit/figures/data.py).
 
 ## Plans and Sponsors
 
@@ -79,7 +79,7 @@ DOL cuts `PROVIDER_OTHER_NAME` off at 35 characters, so a name like FOX EVERETT 
 
 ## Carriers
 
-Carrier names aren't used in any current chart. If a carrier view is added, carriers would be grouped by `INS_CARRIER_EIN` or `INS_CARRIER_NAIC_CODE` (both in silver) and labeled with the most common `INS_CARRIER_NAME` in each group. Grouping carriers under a parent company would need outside information and isn't planned.
+The dashboard's carrier view groups Schedule A contracts by `INS_CARRIER_NAIC_CODE`, the insurer's identifier from the filing. When the NAIC code is missing or all zeros it falls back to `INS_CARRIER_EIN`, then to the upper-cased name. Each group is labeled with the `INS_CARRIER_NAME` it files under most often. A NAIC code identifies one insurance company, so affiliates of the same parent (for example, separate state subsidiaries) show as separate carriers. Grouping them under a parent company would need outside information and isn't done. The Accounts page lists carrier names exactly as filed.
 
 ## Match Audit
 
@@ -87,36 +87,36 @@ Schedule C rows on the plans charts 5 and 9 use (single-employer, welfare-only f
 
 | Firm | Distinct names | Rows | Most common names (rows) |
 |---|---:|---:|---|
-| WTW | 90 | 930 | WILLIS TOWERS WATSON (298); WILLIS TOWERS WATSON US LLC (232) |
-| OneDigital | 56 | 752 | ONEDIGITAL (PHILADELPHIA) (132); DIGITAL INSURANCE, LLC (131) |
-| Gallagher | 38 | 566 | GALLAGHER BENEFIT SERVICES (179); GALLAGHER BENEFIT SERVICES INC (115) |
-| Brown & Brown | 86 | 494 | BROWN & BROWN OF PA (54); BROWN & BROWN (PA) (44) |
+| WTW | 90 | 931 | WILLIS TOWERS WATSON (299); WILLIS TOWERS WATSON US LLC (232) |
+| OneDigital | 56 | 751 | DIGITAL INSURANCE, LLC (131); ONEDIGITAL (PHILADELPHIA) (131) |
+| Gallagher | 38 | 565 | GALLAGHER BENEFIT SERVICES (179); GALLAGHER BENEFIT SERVICES INC (114) |
+| Brown & Brown | 86 | 493 | BROWN & BROWN OF PA (54); BROWN & BROWN (PA) (44) |
 | Marsh McLennan Agency | 76 | 481 | MARSH & MCLENNAN AGENCY LLC (171); MARSH & MCLENNAN AGENCY (48) |
-| HUB International | 79 | 469 | HUB INTERNATIONAL MIDWEST LTD (83); HUB INTERNATIONAL MIDWEST LIMITED (75) |
+| HUB International | 79 | 470 | HUB INTERNATIONAL MIDWEST LTD (83); HUB INTERNATIONAL MIDWEST LIMITED (75) |
 | Aon | 39 | 451 | AON CONSULTING, INC. (101); AON CONSULTING (97) |
-| Mercer | 24 | 447 | MERCER HEALTH & BENEFITS LLC (153); MERCER (118) |
+| Mercer | 24 | 444 | MERCER HEALTH & BENEFITS LLC (150); MERCER (118) |
 | Lockton | 23 | 443 | LOCKTON COMPANIES, LLC (306); LOCKTON COMPANIES LLC (74) |
 | AssuredPartners | 79 | 405 | ASSURED PARTNERS (CENTRAL PA) (145); ASSURED PARTNERS (44) |
-| McGriff | 30 | 387 | MCGRIFF INSURANCE SERVICES INC (89); MCGRIFF INSURANCE SERVICES (89) |
+| McGriff | 30 | 387 | MCGRIFF INSURANCE SERVICES (89); MCGRIFF INSURANCE SERVICES INC (89) |
 | USI | 51 | 381 | USI INSURANCE SERVICES LLC (149); USI INSURANCE SERVICES (42) |
 | Segal | 27 | 253 | THE SEGAL COMPANY (78); SEGAL CONSULTING (29) |
-| CBIZ | 39 | 251 | CBIZ BENEFITS & INSURANCE SERVICES (43); CBIZ (25) |
-| Acrisure | 39 | 205 | ACRISURE LLC (93); ACRISURE, LLC (26) |
-| Alliant | 27 | 201 | ALLIANT INSURANCE SERVICES INC (75); ALLIANT INSURANCE SERVICES, INC. (44) |
+| CBIZ | 39 | 250 | CBIZ BENEFITS & INSURANCE SERVICES (42); CBIZ (25) |
+| Acrisure | 39 | 206 | ACRISURE LLC (93); ACRISURE, LLC (26) |
+| Alliant | 27 | 202 | ALLIANT INSURANCE SERVICES INC (76); ALLIANT INSURANCE SERVICES, INC. (44) |
 | NFP | 51 | 199 | NFP CA INSURANCE SERVICES (34); NFP CORPORATE SERVICES (26) |
-| Holmes Murphy | 19 | 144 | HOLMES MURPHY & ASSOCIATES (34); HOLMES MURPHY & ASSOCIATES INC (32) |
+| Holmes Murphy | 19 | 145 | HOLMES MURPHY & ASSOCIATES (35); HOLMES MURPHY & ASSOCIATES INC (32) |
 | Alera | 34 | 124 | DAVIDSON BENEFITS AN ALERA AGENCY (42); COURY HEALTH SERVICES (ALERA) (7) |
-| IMA | 7 | 99 | IMA, INC. (63); IMA FINANCIAL GROUP (ECM SOLUTIONS) (13) |
+| IMA | 7 | 100 | IMA, INC. (63); IMA FINANCIAL GROUP (ECM SOLUTIONS) (14) |
 | EPIC | 18 | 88 | EDGEWOOD PARTNERS INSURANCE CENTER (41); EPIC INSURANCE BROKERS (CENTRAL PA) (10) |
 | Hylant | 8 | 85 | HYLANT GROUP INC (31); HYLANT GROUP (19) |
 
-Of 123,396 rows, 7,855 match a firm (940 distinct names), and 18,832 rows (2,940 names) are broker-type providers with no match, counted as local brokers. The largest of those are regional firms whose names carry no tracked firm's name:
+Of 123,400 rows, 7,854 match a firm (940 distinct names), and 18,842 rows (2,936 names) are broker-type providers with no match, counted as local brokers. The largest of those are regional firms whose names carry no tracked firm's name:
 
 | Unmatched broker-type name | Rows |
 |---|---:|
-| THE BENECON GROUP (three spellings) | 5,621 |
+| THE BENECON GROUP (three spellings) | 5,626 |
 | MCCONKEY BENEFITS & FINANCIAL SERV | 321 |
-| BSI CORPORATE BENEFITS (two spellings) | 285 |
+| BSI CORPORATE BENEFITS (two spellings) | 287 |
 | EBENCONCEPTS COMPANY | 157 |
 | EMERITI RETIREMENT HEALTH SOLUTIONS | 150 |
 | PCI INSURANCE AGENCY | 145 |
