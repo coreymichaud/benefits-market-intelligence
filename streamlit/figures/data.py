@@ -1,11 +1,12 @@
 """Aggregate tables built from the Form 5500 parquet exports.
 
 The SQL follows notebooks/analysis.ipynb. DuckDB reads the parquet files once per server
-process and only the small aggregates are kept in memory.
+process and only the aggregates (plus one row per plan for the account list) stay in memory.
 """
 
 import tempfile
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 
 import duckdb
@@ -29,14 +30,14 @@ LINES = [
 ]
 
 SELF_FUNDING_BANDS = [
-    "100–249",
-    "250–499",
-    "500–999",
-    "1,000–2,499",
-    "2,500–4,999",
+    "100-249",
+    "250-499",
+    "500-999",
+    "1,000-2,499",
+    "2,500-4,999",
     "5,000+",
 ]
-VOLUNTARY_BANDS = ["100–249", "250–499", "500–999", "1,000–4,999", "5,000+"]
+VOLUNTARY_BANDS = ["100-249", "250-499", "500-999", "1,000-4,999", "5,000+"]
 
 NAICS_SECTORS = {
     "11": "Agriculture",
@@ -80,7 +81,10 @@ STATE_NAMES = {
     "WA": "Washington", "WV": "West Virginia", "WI": "Wisconsin", "WY": "Wyoming",
 }  # fmt: skip
 
-# Order matters: a provider name takes the first firm whose pattern matches (as np.select does)
+# Order matters: a provider name takes the first firm whose pattern matches (as np.select does).
+# Each firm has a pattern the name must match and, optionally, a pattern that rules it out
+# (investment arms, law firms, look-alike names). \b is a word boundary, so ALERA no longer
+# matches SALERA. Keep in sync with the notebook; rules and examples are in docs/name-matching.md.
 BROKER_FIRMS = {
     "WTW": (r"\bWILLIS\b|\bTOWERS WATSON\b|^WTW\b|WILLISTOWERSWATSON", r"INVESTMENT"),
     "Mercer": (r"\bMERCER\b", r"INVESTMENT|\bMERCER (?:COUNTY|ISLAND|UNIVERSITY)\b"),
@@ -161,51 +165,67 @@ LINE_CASE = """
     END
 """
 
-# tr_* columns only count contracts that also pass the notebook's take-rate screen
-CONTRACTS = f"""
+# Every Schedule A contract on a kept filing, with the notebook's screens as flags. The
+# aggregates below filter on these flags, so each rule is written once.
+CONTRACTS_ALL = f"""
     WITH flagged AS (
         SELECT
-            f.FORM_YEAR,
+            a.ACK_ID,
+            f.FORM_YEAR AS year,
+            f.plan_key,
             f.naics_2,
             f.state,
-            a.INS_BROKER_COMM_TOT_AMT AS commissions,
-            a.INS_BROKER_FEES_TOT_AMT AS fees,
+            UPPER(TRIM(a.INS_CARRIER_NAME)) AS carrier_name,
+            -- One carrier per NAIC code, else per EIN, else per name (see docs/name-matching.md)
+            COALESCE(
+                NULLIF(LTRIM(TRIM(a.INS_CARRIER_NAIC_CODE), '0'), ''),
+                'EIN ' || NULLIF(TRIM(a.INS_CARRIER_EIN), ''),
+                UPPER(TRIM(a.INS_CARRIER_NAME))
+            ) AS carrier_key,
+            COALESCE(a.INS_BROKER_COMM_TOT_AMT, 0) AS commissions,
+            COALESCE(a.INS_BROKER_FEES_TOT_AMT, 0) AS fees,
+            a.INS_BROKER_COMM_TOT_AMT IS NULL AND a.INS_BROKER_FEES_TOT_AMT IS NULL AS blank_pay,
             TRY_CAST(a.INS_PRSN_COVERED_EOY_CNT AS DOUBLE) AS lives,
             GREATEST(COALESCE(a.WLFR_TOT_CHARGES_PAID_AMT, 0),
                      COALESCE(a.WLFR_TOT_EARNED_PREM_AMT, 0)) AS premium,
+            -- Policy year under 360 days; null when the dates are missing. Never annualized.
+            DATE_DIFF('day', a.INS_POLICY_FROM_DATE, a.INS_POLICY_TO_DATE) + 1 < 360
+                AS partial_year,
+            COALESCE(a.WLFR_BNFT_OTHER_IND = '1' OR a.WLFR_BNFT_INDEMNITY_IND = '1', FALSE)
+                AS other_or_indemnity,
             {COVERAGE_FLAGS}
         FROM SCH_A a
         JOIN filings f USING (ACK_ID)
     ),
-    screened AS (
-        SELECT
-            FORM_YEAR,
-            naics_2,
-            state,
-            COALESCE(commissions, 0) AS commissions,
-            COALESCE(fees, 0) AS fees,
-            lives,
-            premium,
-            {LINE_CASE} AS line
-        FROM flagged
-        -- Data-quality screen: drop negative amounts, missing lives, and implausible $/life
-        WHERE COALESCE(commissions, 0) >= 0
-          AND COALESCE(fees, 0) >= 0
-          AND lives BETWEEN 1 AND 1000000
-          AND (COALESCE(commissions, 0) + COALESCE(fees, 0)) / lives <= 2500
-    ),
-    tagged AS (
+    lined AS (
         SELECT
             *,
-            line <> 'Unclassified'
-                AND premium > 0
-                AND premium / lives <= 50000
-                AND (commissions + fees) / premium <= 1
-                AND premium <= 250000000 AS take_rate_ok
-        FROM screened
+            {LINE_CASE} AS line,
+            -- Same voluntary rule as the VOLUNTARY query: other or indemnity, no core line
+            other_or_indemnity AND NOT (med OR sl OR den OR vis OR life OR dis) AS voluntary,
+            -- Data-quality screen: drop negative amounts, missing lives, and implausible $/life
+            commissions >= 0
+                AND fees >= 0
+                AND COALESCE(lives BETWEEN 1 AND 1000000, FALSE)
+                AND (commissions + fees) / lives <= 2500 AS in_pool
+        FROM flagged
     )
     SELECT
-        FORM_YEAR AS year,
+        * EXCLUDE (sl, den, vis, life, dis, oth, other_or_indemnity),
+        in_pool
+            AND line <> 'Unclassified'
+            AND premium > 0
+            AND premium / lives <= 50000
+            AND (commissions + fees) / premium <= 1
+            AND premium <= 250000000 AS take_rate_ok
+    FROM lined
+"""
+
+# tr_* columns only count contracts that also pass the notebook's take-rate screen. blank_*
+# columns let the take rate and fee adoption views leave out contracts with blank pay.
+CONTRACTS = """
+    SELECT
+        year,
         line,
         naics_2,
         state,
@@ -215,8 +235,51 @@ CONTRACTS = f"""
         COUNT(*) AS contracts,
         COUNT(*) FILTER (WHERE fees > 0) AS fee_contracts,
         COALESCE(SUM(premium) FILTER (WHERE take_rate_ok), 0) AS tr_premium,
-        COALESCE(SUM(commissions + fees) FILTER (WHERE take_rate_ok), 0) AS tr_compensation
-    FROM tagged
+        COALESCE(SUM(commissions + fees) FILTER (WHERE take_rate_ok), 0) AS tr_compensation,
+        COUNT(*) FILTER (WHERE blank_pay) AS blank_contracts,
+        COALESCE(SUM(premium) FILTER (WHERE take_rate_ok AND blank_pay), 0) AS blank_tr_premium,
+        COUNT(*) FILTER (WHERE partial_year) AS partial_contracts
+    FROM contracts_all
+    WHERE in_pool
+    GROUP BY ALL
+"""
+
+# The 25 carriers with the most premium on the take-rate base, each labeled with the name it
+# files under most often. Built as its own table first so the contracts are only scanned once
+# per query, which keeps memory down.
+TOP_CARRIERS = """
+    SELECT
+        carrier_key,
+        MODE(carrier_name) AS carrier,
+        SUM(premium) FILTER (WHERE take_rate_ok) AS premium
+    FROM contracts_all
+    WHERE carrier_key IS NOT NULL
+    GROUP BY carrier_key
+    ORDER BY premium DESC NULLS LAST
+    LIMIT 25
+"""
+
+CARRIERS = """
+    SELECT
+        c.year,
+        COALESCE(t.carrier, 'Other carriers') AS carrier,
+        c.line,
+        c.naics_2,
+        c.state,
+        COUNT(*) AS contracts,
+        COALESCE(SUM(c.premium) FILTER (WHERE c.take_rate_ok), 0) AS tr_premium
+    FROM contracts_all c
+    LEFT JOIN top_carriers t USING (carrier_key)
+    WHERE c.in_pool
+    GROUP BY ALL
+"""
+
+# Broker pay per plan and year, for checking how much of a state's growth comes from a few plans.
+# Plans are identified by a 64-bit hash of the plan key, which is all this needs and keeps it small.
+PLAN_PAY = """
+    SELECT year, HASH(plan_key) AS plan_id, naics_2, state, SUM(commissions + fees) AS pay
+    FROM contracts_all
+    WHERE in_pool
     GROUP BY ALL
 """
 
@@ -242,11 +305,11 @@ HEALTH_PLANS = """
     SELECT
         FORM_YEAR AS year,
         CASE
-            WHEN participants < 250 THEN '100–249'
-            WHEN participants < 500 THEN '250–499'
-            WHEN participants < 1000 THEN '500–999'
-            WHEN participants < 2500 THEN '1,000–2,499'
-            WHEN participants < 5000 THEN '2,500–4,999'
+            WHEN participants < 250 THEN '100-249'
+            WHEN participants < 500 THEN '250-499'
+            WHEN participants < 1000 THEN '500-999'
+            WHEN participants < 2500 THEN '1,000-2,499'
+            WHEN participants < 5000 THEN '2,500-4,999'
             ELSE '5,000+'
         END AS band,
         naics_2,
@@ -283,10 +346,10 @@ VOLUNTARY = """
     SELECT
         FORM_YEAR AS year,
         CASE
-            WHEN participants < 250 THEN '100–249'
-            WHEN participants < 500 THEN '250–499'
-            WHEN participants < 1000 THEN '500–999'
-            WHEN participants < 5000 THEN '1,000–4,999'
+            WHEN participants < 250 THEN '100-249'
+            WHEN participants < 500 THEN '250-499'
+            WHEN participants < 1000 THEN '500-999'
+            WHEN participants < 5000 THEN '1,000-4,999'
             ELSE '5,000+'
         END AS band,
         naics_2,
@@ -315,6 +378,7 @@ PROVIDERS = f"""
         f.plan_key,
         f.naics_2,
         f.state,
+        provider,
         {_firm_case()} AS firm,
         broker_role
     FROM (
@@ -329,6 +393,14 @@ PROVIDERS = f"""
     JOIN filings f USING (ACK_ID)
     WHERE f.entity_type = '2'
       AND f.pension_codes IS NULL
+"""
+
+# The names that count toward each firm, with the plan-years they appear on
+FIRM_NAMES = """
+    SELECT firm, provider, COUNT(*) AS plan_years
+    FROM providers
+    WHERE firm IS NOT NULL
+    GROUP BY ALL
 """
 
 FIRM_PLANS = """
@@ -395,15 +467,96 @@ FIRM_EVENTS = """
 """
 
 
+# One row per single-employer plan with 100+ participants, from its latest kept filing in the
+# last two form years: what it insures, with whom, what its brokers are paid and which national
+# firm it names on Schedule C
+ACCOUNTS = f"""
+    WITH latest AS (
+        SELECT ACK_ID, FORM_YEAR, plan_key, participants, naics_2, state, welfare_codes
+        FROM filings
+        WHERE entity_type = '2'
+          AND participants >= 100
+          AND FORM_YEAR >= {LAST - 1}
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY plan_key ORDER BY FORM_YEAR DESC) = 1
+    ),
+    per_filing AS (
+        SELECT
+            ACK_ID,
+            STRING_AGG(DISTINCT line, ', ' ORDER BY line)
+                FILTER (WHERE line <> 'Unclassified') AS lines,
+            COUNT(*) AS contracts,
+            COALESCE(SUM(commissions + fees) FILTER (WHERE in_pool), 0) AS broker_pay,
+            SUM(premium) FILTER (WHERE take_rate_ok) AS tr_premium,
+            SUM(commissions + fees) FILTER (WHERE take_rate_ok) AS tr_compensation,
+            BOOL_OR(med) AS has_insured_medical,
+            BOOL_OR(voluntary) AS has_voluntary,
+            COALESCE(BOOL_OR(partial_year), FALSE) AS partial_year
+        FROM contracts_all
+        WHERE ACK_ID IN (SELECT ACK_ID FROM latest)
+        GROUP BY ACK_ID
+    ),
+    carrier_premium AS (
+        SELECT ACK_ID, carrier_name, SUM(premium) AS premium
+        FROM contracts_all
+        WHERE ACK_ID IN (SELECT ACK_ID FROM latest) AND carrier_name IS NOT NULL
+        GROUP BY ALL
+    ),
+    plan_carriers AS (
+        SELECT ACK_ID, STRING_AGG(carrier_name, '; ' ORDER BY premium DESC) AS carriers
+        FROM (
+            SELECT *
+            FROM carrier_premium
+            QUALIFY ROW_NUMBER() OVER (PARTITION BY ACK_ID ORDER BY premium DESC) <= 3
+        )
+        GROUP BY ACK_ID
+    )
+    SELECT
+        l.plan_key,
+        l.ACK_ID AS ack_id,
+        l.FORM_YEAR AS year,
+        f.SPONSOR_DFE_NAME AS sponsor,
+        f.SPONS_DFE_MAIL_US_CITY AS city,
+        l.state,
+        l.naics_2,
+        l.participants,
+        p.lines,
+        c.carriers,
+        p.contracts,
+        p.broker_pay,
+        p.tr_compensation / NULLIF(p.tr_premium, 0) * 100 AS take_rate,
+        ARRAY_TO_STRING(LIST_SORT(cur.firms), ', ') AS national_firms,
+        COALESCE(LIST_SORT(cur.firms) <> LIST_SORT(prev.firms), FALSE) AS changed_firm,
+        l.welfare_codes LIKE '%4A%' AS offers_health,
+        l.welfare_codes LIKE '%4A%' AND NOT p.has_insured_medical AS self_funded,
+        p.has_voluntary,
+        COALESCE(f.AMENDED_IND = '1', FALSE) AS amended,
+        p.partial_year
+    FROM latest l
+    JOIN per_filing p USING (ACK_ID)
+    LEFT JOIN plan_carriers c USING (ACK_ID)
+    LEFT JOIN F_5500 f USING (ACK_ID)
+    LEFT JOIN plan_years cur ON cur.plan_key = l.plan_key AND cur.year = l.FORM_YEAR
+    LEFT JOIN plan_years prev ON prev.plan_key = l.plan_key AND prev.year = l.FORM_YEAR - 1
+"""
+
+# Latest EFAST receipt date in the data, read from the first 8 digits of ACK_ID
+LATEST_RECEIVED = "SELECT MAX(STRPTIME(LEFT(ACK_ID, 8), '%Y%m%d'))::DATE FROM F_5500"
+
+
 @dataclass(frozen=True)
 class Tables:
     """Aggregates behind every chart. Shared across sessions, so never modify them."""
 
     contracts: pd.DataFrame  # year, line, sector, state, commissions, fees, lives, ...
+    carriers: pd.DataFrame  # year, carrier, line, sector, state, contracts, tr_premium
+    plan_pay: pd.DataFrame  # year, plan_id, sector, state, pay
     health: pd.DataFrame  # year, band, sector, state, plans, self_funded
     voluntary: pd.DataFrame  # year, band, sector, state, plans, with_voluntary
     firm_plans: pd.DataFrame  # year, firm, sector, state, plans
     firm_events: pd.DataFrame  # year, firm, event, sector, state, plans
+    firm_names: pd.DataFrame  # firm, provider, plan_years
+    accounts: pd.DataFrame  # one row per plan; see ACCOUNTS
+    latest_received: date  # latest EFAST receipt date in the data
 
 
 def _with_sector(df: pd.DataFrame, value_cols: list[str]) -> pd.DataFrame:
@@ -414,7 +567,28 @@ def _with_sector(df: pd.DataFrame, value_cols: list[str]) -> pd.DataFrame:
     return df.groupby(keys, as_index=False, observed=True)[value_cols].sum()
 
 
-@st.cache_resource(show_spinner="Reading 2019–2024 Form 5500 filings…")
+def _band(participants: pd.Series) -> pd.Series:
+    """The self-funding size bands, for the account list."""
+    return pd.cut(
+        participants,
+        [100, 250, 500, 1000, 2500, 5000, float("inf")],
+        right=False,
+        labels=SELF_FUNDING_BANDS,
+    ).astype(str)
+
+
+def _accounts(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.assign(
+        sector=df["naics_2"].map(NAICS_SECTORS).fillna("Unknown"),
+        band=_band(df["participants"]),
+    ).drop(columns="naics_2")
+    df["state"] = df["state"].fillna("")
+    # Peer benchmark: the median take rate among plans in the same size band
+    df["band_take_rate"] = df.groupby("band")["take_rate"].transform("median")
+    return df.sort_values("broker_pay", ascending=False, ignore_index=True)
+
+
+@st.cache_resource(show_spinner="Reading 2019-2024 Form 5500 filings")
 def load() -> Tables:
     with duckdb.connect() as con:
         con.execute("SET threads = 2")
@@ -426,7 +600,11 @@ def load() -> Tables:
             con.execute(f"CREATE VIEW {table} AS SELECT * FROM read_parquet('{path}')")
 
         con.execute(f"CREATE TEMP TABLE filings AS {FILINGS}")
+        con.execute(f"CREATE TEMP VIEW contracts_all AS {CONTRACTS_ALL}")
         contracts = con.sql(CONTRACTS).df()
+        con.execute(f"CREATE TEMP TABLE top_carriers AS {TOP_CARRIERS}")
+        carriers = con.sql(CARRIERS).df()
+        plan_pay = con.sql(PLAN_PAY).df()
         health = con.sql(HEALTH_PLANS).df()
         voluntary = con.sql(VOLUNTARY).df()
 
@@ -434,7 +612,11 @@ def load() -> Tables:
         con.execute(f"CREATE TEMP TABLE plan_years AS {PLAN_YEARS}")
         firm_plans = con.sql(FIRM_PLANS).df()
         firm_events = con.sql(FIRM_EVENTS).df()
+        firm_names = con.sql(FIRM_NAMES).df()
+        accounts = con.sql(ACCOUNTS).df()
+        latest_received = con.sql(LATEST_RECEIVED).fetchone()[0]
 
+    plan_pay = _with_sector(plan_pay, ["pay"])
     return Tables(
         contracts=_with_sector(
             contracts,
@@ -446,12 +628,20 @@ def load() -> Tables:
                 "fee_contracts",
                 "tr_premium",
                 "tr_compensation",
+                "blank_contracts",
+                "blank_tr_premium",
+                "partial_contracts",
             ],
         ),
+        carriers=_with_sector(carriers, ["contracts", "tr_premium"]),
+        plan_pay=plan_pay,
         health=_with_sector(health, ["plans", "self_funded"]),
         voluntary=_with_sector(voluntary, ["plans", "with_voluntary"]),
         firm_plans=_with_sector(firm_plans, ["plans"]),
         firm_events=_with_sector(firm_events, ["plans"]),
+        firm_names=firm_names,
+        accounts=_accounts(accounts),
+        latest_received=latest_received,
     )
 
 
