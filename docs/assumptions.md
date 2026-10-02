@@ -22,12 +22,12 @@ This document covers the rules and judgment calls behind the analysis in [`noteb
 ## Filing Window
 
 - **The rule:** each year keeps only filings received within 9.5 months of plan year end, which is the 7-month deadline plus the 2.5-month extension. Older years have had more time to collect late filings, so this puts every year on equal footing.
-- **Receipt date:** taken from the first 8 digits of `ACK_ID`, which is the EFAST receipt timestamp. Gold also keeps `DATE_RECEIVED`, the receipt date DOL records for each filing, so the two can be checked against each other.
-- **Plan year end:** assumed to be 12 months after `FORM_PLAN_YEAR_BEGIN_DATE`, because the actual end date isn't in gold. In SQL the cutoff is the begin date plus 21 months and 14 days. Short plan years get a slightly generous window.
-- **What gets dropped:** between about 11% and 17% of welfare filings in each year from 2019 to 2023, and about 8% for 2024. That group mixes three things: filings that really were late or delinquent, on-time filings that were amended later (see below), and catch-up filings for plan years several years back that DOL files under a newer form year. The catch-up group is about 27,000 welfare filings. Since the window is measured from the plan year begin date, all of them fall out, which also keeps them from being counted in the wrong year.
+- **Receipt date:** taken from the first 8 digits of `ACK_ID`, which is the EFAST receipt timestamp. Gold also keeps `DATE_RECEIVED`, the receipt date DOL records for each filing; the two agree on 99.6% of filings.
+- **Plan year end:** assumed to be 12 months after `FORM_PLAN_YEAR_BEGIN_DATE`, because `gold.F_5500` doesn't carry an end date. In SQL the cutoff is the begin date plus 21 months and 14 days. Short plan years (flagged by `SHORT_PLAN_YR_IND`) get a slightly generous window.
+- **What gets dropped:** between about 11% and 17% of welfare filings in each year from 2019 to 2023, and about 9% for 2024. That group mixes three things: filings that really were late or delinquent, on-time filings that were amended later (see below), and catch-up filings for plan years several years back that DOL files under a newer form year. The catch-up group is about 27,000 welfare filings. Since the window is measured from the plan year begin date, all of them fall out, which also keeps them from being counted in the wrong year.
 - **Amended filings are a known leak.** DOL's "Latest" dataset keeps only the most recent version of each filing, so a plan that filed on time but amended later looks late and is dropped. Older years have had longer to pick up amendments, so the leak is probably a bit larger for them than for 2023 and 2024. See [Amended Filings & Traceability](#amended-filings--traceability).
 - **2024's lower exclusion rate isn't better compliance.** Late 2024 filings are still coming in, so fewer of them exist yet to be excluded.
-- **2024 may be slightly incomplete.** The data snapshot ends August 24, 2026. 2024 plan years that begin after about mid-November 2024 haven't reached the end of their window, so some of their on-time filings may not be in the data yet. That's about 2.5% of 2024 welfare filings, all of them non-calendar-year plans.
+- **2024 is nearly complete.** The data snapshot ends September 24, 2026. 2024 plan years that begin after December 10, 2024 haven't reached the end of their window, so some of their on-time filings may not be in the data yet. That's about 0.3% of 2024 welfare filings, all of them non-calendar-year plans.
 
 ## Plan Identity & Deduplication
 
@@ -39,7 +39,7 @@ This document covers the rules and judgment calls behind the analysis in [`noteb
 ## Amended Filings & Traceability
 
 - **Default version:** the "Latest" files hold only the most recent filing DOL has received for each plan and year, and deduplication keeps the latest on-time one. An amended return therefore replaces the original, so every number uses the most recent accepted version.
-- **Counting amendments:** gold keeps `AMENDED_IND` from the main form (1 when the filer checked the amended return box), so the share of kept filings that are amendments can be reported for any year.
+- **Counting amendments:** gold keeps `AMENDED_IND` from the main form (1 when the filer checked the amended return box). About 2% of kept filings each year are amendments (1.9% to 2.5%).
 - **Tracing a number to a filing:** every gold row keeps the IDs needed to find its source: `ACK_ID` in all three tables, plus `FORM_ID` for a Schedule A contract and `ROW_ORDER` for a Schedule C provider. An `ACK_ID` can be looked up on DOL's public [EFAST2 Form 5500 search](https://www.efast.dol.gov/5500Search/) to see the filed form.
 - **Earlier versions aren't loaded.** The original filing an amendment replaced is only in DOL's "All" files, which this project doesn't download. The limits that creates for the filing window are covered above.
 
@@ -69,7 +69,7 @@ This document covers the rules and judgment calls behind the analysis in [`noteb
 ## Policy Periods & Partial Years
 
 - **Two different periods.** Each Schedule A contract reports its policy year (`INS_POLICY_FROM_DATE` to `INS_POLICY_TO_DATE`) on the filing for the plan year (`SCH_A_PLAN_YEAR_BEGIN_DATE` to `SCH_A_PLAN_YEAR_END_DATE`) in which that policy year ends. A contract that renews July 1 lands on the plan year it ends in, so one plan year's Schedule A can cover parts of two calendar years.
-- **Partial years are flagged, never annualized.** A contract with a policy year shorter than 12 months (a new contract, a mid-year carrier change or a cancellation) reports only the premium and pay for that shorter period. A contract counts as partial-year when its policy period is under 360 days, and a filing counts as a short plan year when `SHORT_PLAN_YR_IND = 1`. All of these fields are in gold. No amount is ever scaled up to a full year; the current charts count partial-year records as reported.
+- **Partial years are flagged, never annualized.** A contract with a policy year shorter than 12 months (a new contract, a mid-year carrier change or a cancellation) reports only the premium and pay for that shorter period. A contract counts as partial-year when its policy period is under 360 days, and a filing counts as a short plan year when `SHORT_PLAN_YR_IND = 1`. All of these fields are in gold. About 4% to 5% of contracts in the pay pool are partial-year each year, and about 4% to 5% of kept filings are short plan years. No amount is ever scaled up to a full year; the charts count partial-year records as reported.
 - **Schedule A and Schedule C are never added together.** Schedule A amounts follow the policy year, while Schedule C reports what a provider was paid during the plan year. The analysis only uses Schedule C to see which firms a plan names, never for dollars, so no number mixes the two periods.
 - **Year-over-year comparisons hold** as long as a plan keeps the same renewal date from one year to the next, which most do.
 
@@ -93,7 +93,7 @@ Schedule A contracts that fail any of these checks are dropped. The chart 7 scre
 | Broker pay above 100% of premium | 7 |
 | Premium above $250M on a single contract | 7 |
 
-- The first three screens remove just under 2.5% of contracts. Yearly totals move by less than 4% whether the pay cap is $1K or $5K.
+- The first three screens remove about 2.3% to 2.5% of contracts a year. Yearly totals move by less than 3% whether the pay cap is $1K or $5K.
 - Charts 4 and 8 don't use these screens. They only look at which benefits a contract covers, not at dollar amounts.
 - Charts 5 and 9 come from Schedule C and don't use them either.
 
@@ -103,12 +103,12 @@ What each rule keeps and removes, by form year. Filings are counted before any r
 
 | Form year | Welfare filings | Plans kept | Schedule A contracts | Negative amounts | No usable lives | Over $2,500 per life | Contracts kept | Broker pay kept |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| 2019 | 87,298 | 76,861 | 250,407 | 587 | 4,927 | 465 | 244,428 | $5.35B |
-| 2020 | 89,494 | 74,961 | 247,127 | 556 | 4,527 | 555 | 241,489 | $5.40B |
-| 2021 | 87,530 | 72,737 | 243,956 | 601 | 4,777 | 464 | 238,114 | $5.52B |
-| 2022 | 88,559 | 74,467 | 251,058 | 564 | 4,576 | 591 | 245,327 | $6.14B |
-| 2023 | 89,267 | 77,287 | 265,998 | 629 | 5,422 | 529 | 259,418 | $6.84B |
-| 2024 | 85,549 | 78,180 | 274,741 | 643 | 5,771 | 479 | 267,848 | $7.54B |
+| 2019 | 87,291 | 76,854 | 250,385 | 587 | 4,927 | 465 | 244,406 | $5.35B |
+| 2020 | 89,486 | 74,953 | 247,088 | 556 | 4,527 | 555 | 241,450 | $5.40B |
+| 2021 | 87,517 | 72,726 | 243,916 | 601 | 4,777 | 464 | 238,074 | $5.52B |
+| 2022 | 88,533 | 74,446 | 250,993 | 564 | 4,576 | 591 | 245,262 | $6.14B |
+| 2023 | 89,364 | 77,223 | 265,770 | 628 | 5,421 | 528 | 259,193 | $6.83B |
+| 2024 | 85,970 | 78,182 | 274,660 | 642 | 5,769 | 478 | 267,771 | $7.56B |
 
 Contracts dropped for having no usable lives count also carry $36M to $54M a year of broker pay under $5M per contract, which is left out of the pool along with them.
 
@@ -123,7 +123,7 @@ A blank commission or fee on a filed Schedule A is read as $0. Before relying on
 | 2021 | 11.0% | 14.7% | 10.6% | 3.0% | 4.6% |
 | 2022 | 11.0% | 14.3% | 10.6% | 4.2% | 5.2% |
 | 2023 | 10.5% | 13.5% | 10.2% | 5.0% | 5.7% |
-| 2024 | 9.9% | 12.4% | 9.6% | 5.5% | 6.1% |
+| 2024 | 9.9% | 12.5% | 9.6% | 5.5% | 6.1% |
 
 - **Blanks are steady,** so they don't drive the trends.
 - **They aren't carriers refusing to report.** The "carrier failed to provide information" box (`INS_FAIL_PROVIDE_INFO_IND`) is checked about as often when the amounts are filled in as when they're blank.
@@ -135,10 +135,10 @@ A blank commission or fee on a filed Schedule A is read as $0. Before relying on
 |---|---|---|
 | Market take rate | 3.32% to 3.78% | 4.12% to 4.57% |
 | Medical take rate | 2.12% to 2.08% | 2.75% to 2.73% |
-| Multi-line bundle take rate | 4.40% to 5.16% | 4.95% to 5.53% |
+| Multi-line bundle take rate | 4.40% to 5.18% | 4.95% to 5.55% |
 | Voluntary & other take rate | 10.40% to 13.54% | 13.18% to 16.14% |
-| Stop-loss take rate | 3.56% to 3.26% | 4.80% to 4.90% |
-| Stop-loss fee adoption | 17% to 19% | 27% to 35% |
+| Stop-loss take rate | 3.56% to 3.26% | 4.80% to 4.89% |
+| Stop-loss fee adoption | 17.4% to 18.5% | 27.0% to 35.0% |
 
 - **What's reported:** blanks as $0, since the filer submitted the schedule and left the amount empty. Take rates and fee adoption are a floor. The direction of every trend holds either way except stop-loss: its take rate falls with blanks as zero and rises slightly with them dropped, so any stop-loss compression finding is low confidence.
 
@@ -282,3 +282,28 @@ The Streamlit app runs the notebook's SQL against the parquet files in `data/exp
 - **Retention:** plans kept divided by plans kept plus plans lost.
 - **Momentum map:** only firms with at least 3 plans in the start year and at least 5 plans kept or lost are placed. The retention split is the median across those firms.
 - **Every minimum base** the notebook and dashboard use is listed in [Minimum Bases](#minimum-bases).
+- **Blank pay switch:** the take rate and fee adoption views can leave out contracts that left both commission and fees blank, instead of counting them as $0 (see [Blank Amounts](#blank-amounts)). Broker pay totals are the same either way.
+- **Partial-year share:** the pay pool caption reports the share of contracts in the end year whose policy year is under 12 months. They stay in every total, as reported.
+- **State growth without the top 5 plans:** the state map's tooltip and caption recompute each state's growth after removing the five plans whose broker pay rose the most, using each plan's state as filed in each year.
+- **Carriers:** the carrier view groups contracts by `INS_CARRIER_NAIC_CODE`, then by `INS_CARRIER_EIN` when the NAIC code is missing, then by name, and labels each group with the name it files under most often. The 25 carriers with the most premium on the take-rate base are named and the rest are grouped as other carriers. Shares use premium on the take-rate base.
+- **Calls:** the call and confidence badges (see [Confidence Ratings](#confidence-ratings)) describe the full market from 2019 to 2024, so they only show when no filter is applied.
+
+### Accounts Page
+
+One row per single-employer plan with 100+ participants and at least one Schedule A contract, taken from the plan's latest kept filing in the last two form years (2023 or 2024). The year filter doesn't apply; industry and state do.
+
+| Column | How it's built |
+|---|---|
+| Sponsor, city | `SPONSOR_DFE_NAME` and `SPONS_DFE_MAIL_US_CITY` from the same filing. The EIN and plan number show when no name was filed |
+| Lines | Every line of coverage on the filing's Schedule A contracts |
+| Top carriers | Up to three carriers by premium, as filed |
+| Broker pay | Commissions plus fees on contracts that pass the first three screens |
+| Take rate | Broker pay divided by premium on contracts in the take-rate base |
+| Band median | The median take rate among listed plans in the same size band |
+| National firm | Tracked firms named on that year's Schedule C. Empty when the plan files no Schedule C, names no tracked firm, or also reports a pension benefit code (as in chart 5) |
+| Self-funded | Offers health coverage (welfare code 4A) with no insured medical contract, as in chart 4 |
+| Voluntary | Has a contract with only the other or indemnity flag, as in chart 8 |
+| Changed firm | The tracked firms on Schedule C differ from the year before, for plans that list Schedule C providers in both years. A move from a local broker to a national firm counts |
+| Amended | `AMENDED_IND` is 1 on the filing |
+| Partial year | At least one contract's policy year is under 360 days |
+| ACK ID | The filing the row comes from, for lookup on [EFAST2](https://www.efast.dol.gov/5500Search/) |
