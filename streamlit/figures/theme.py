@@ -1,6 +1,7 @@
 """Chart styling, adapted from the notebook's base_theme and the project style module."""
 
 from itertools import pairwise
+from typing import Literal
 
 import numpy as np
 import plotly.graph_objects as go
@@ -12,6 +13,11 @@ ACCENT_2 = "#007CB0"
 BLACK = "#000000"
 GREY = "#929292"
 RED = "#AA3036"
+
+# Named colors st.badge accepts
+BadgeColor = Literal[
+    "red", "orange", "yellow", "blue", "green", "violet", "gray", "grey", "primary"
+]
 
 # Neutrals for gridlines and muted marks
 GRID = "#EDEDED"

@@ -106,7 +106,9 @@ def load() -> Tables:
         firm_events = con.sql(FIRM_EVENTS).df()
         firm_names = con.sql(FIRM_NAMES).df()
         accounts = con.sql(ACCOUNTS).df()
-        latest_received = con.sql(LATEST_RECEIVED).fetchone()[0]
+        row = con.sql(LATEST_RECEIVED).fetchone()
+        assert row is not None  # MAX() always returns a row
+        latest_received = row[0]
 
     plan_pay = _with_sector(plan_pay, ["pay"])
     return Tables(

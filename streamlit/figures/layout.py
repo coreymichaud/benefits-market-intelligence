@@ -12,7 +12,8 @@ from figures.data import Filters
 from figures.theme import PLOTLY_CONFIG
 
 ALL = "ALL"
-FILTER_DEFAULTS = {"years": (FIRST, LAST), "industry": ALL, "state": ALL}
+DEFAULT_YEARS = (FIRST, LAST)
+FILTER_DEFAULTS = {"years": DEFAULT_YEARS, "industry": ALL, "state": ALL}
 LINK_OFFSET = 15
 
 REPO = "https://github.com/coreymichaud/benefits-market-intelligence/blob/main/docs"
@@ -69,7 +70,7 @@ def header(pages: list, show_years: bool = True) -> Filters:
         start, end = st.select_slider(
             "Form years",
             options=YEARS,
-            value=FILTER_DEFAULTS["years"],
+            value=DEFAULT_YEARS,
             key="years",
             on_change=_keep_range,
             bind="query-params",
@@ -89,7 +90,7 @@ def header(pages: list, show_years: bool = True) -> Filters:
     with state:
         code = st.selectbox(
             "State",
-            [ALL, *sorted(STATE_NAMES, key=STATE_NAMES.get)],
+            [ALL, *sorted(STATE_NAMES, key=STATE_NAMES.__getitem__)],
             key="state",
             format_func=lambda s: "All states" if s == ALL else STATE_NAMES[s],
             bind="query-params",
@@ -176,10 +177,12 @@ def panel(
         if points and on_click:
             on_click(points[0])
 
+    # Picked before the call so ty can match it to one of plotly_chart's overloads
+    on_select = _handle if on_click else "ignore"
     st.plotly_chart(
         chart.figure,
         key=key,
-        on_select=_handle if on_click else "ignore",
+        on_select=on_select,
         selection_mode="points",
         config=PLOTLY_CONFIG,
         theme=None,

@@ -13,12 +13,13 @@ from figures.theme import (
     GRID,
     KEEP_STYLE,
     PALETTE,
+    BadgeColor,
     base_theme,
     empty_figure,
     join_names,
 )
 
-QUADRANTS = {
+QUADRANTS: dict[tuple[bool, bool], tuple[str, BadgeColor, str]] = {
     (True, True): ("Growing, keeping clients", "green", ":material/trending_up:"),
     (True, False): ("Growing, losing clients", "blue", ":material/swap_vert:"),
     (False, True): ("Shrinking, keeping clients", "gray", ":material/trending_flat:"),
@@ -26,7 +27,9 @@ QUADRANTS = {
 }
 
 
-def momentum_status(stats: pd.DataFrame, firm: str) -> tuple[str, str, str] | None:
+def momentum_status(
+    stats: pd.DataFrame, firm: str
+) -> tuple[str, BadgeColor, str] | None:
     """Returns (label, badge color, icon) for the firm's quadrant on the momentum map."""
     if stats.empty or firm not in stats.index:  # no national firm serves this slice
         return None

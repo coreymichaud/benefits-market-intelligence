@@ -9,9 +9,18 @@ from dataclasses import dataclass
 import streamlit as st
 
 from figures.data import Filters
+from figures.theme import BadgeColor
 
-CALL_COLORS = {"Go": "green", "No-go": "red", "Monitor": "orange"}
-CONFIDENCE_COLORS = {"High": "green", "Medium": "blue", "Low": "gray"}
+CALL_COLORS: dict[str, BadgeColor] = {
+    "Go": "green",
+    "No-go": "red",
+    "Monitor": "orange",
+}
+CONFIDENCE_COLORS: dict[str, BadgeColor] = {
+    "High": "green",
+    "Medium": "blue",
+    "Low": "gray",
+}
 
 
 @dataclass(frozen=True)

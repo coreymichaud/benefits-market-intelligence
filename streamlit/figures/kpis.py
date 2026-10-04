@@ -1,6 +1,7 @@
 """KPI strips for each page, built from the same aggregates as the charts."""
 
 from dataclasses import dataclass
+from typing import Literal
 
 import numpy as np
 import pandas as pd
@@ -20,8 +21,8 @@ class Kpi:
     description: str | None = None
     chart: list[float] | None = None
     help: str | None = None
-    color: str = "normal"
-    arrow: str = "auto"
+    color: Literal["normal", "inverse", "off"] = "normal"
+    arrow: Literal["auto", "up", "down", "off"] = "auto"
 
 
 def render(kpis: list[Kpi], columns=None) -> None:

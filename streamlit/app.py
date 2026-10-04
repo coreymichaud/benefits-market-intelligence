@@ -31,7 +31,8 @@ PAGES = [
 ]
 
 # Page links are in the header row since Streamlit adds extra padding in its top bar
-page = st.navigation(PAGES, position="hidden")
+# ty mistakes st.navigation for its submodule, it's a function at runtime
+page = st.navigation(PAGES, position="hidden")  # ty: ignore[call-non-callable]
 tables = load()
 # Accounts lists each plan's latest filing, so the year range doesn't apply there
 header(PAGES, show_years=page.title != "Accounts")
