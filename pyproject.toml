@@ -24,6 +24,8 @@ dev = [
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
     "ruff>=0.16.3",
+    # Exact pin since ty is still 0.0.x and any release can change what it reports
+    "ty==0.0.84",
 ]
 
 [build-system]
@@ -33,6 +35,11 @@ build-backend = "uv_build"
 [tool.ruff.lint]
 # Pinned so a ruff upgrade can't change what CI enforces
 select = ["E4", "E7", "E9", "F"]
+
+[tool.ty.environment]
+# Streamlit runs app.py with streamlit/ on the path and pytest does the same with tests/, so
+# imports like `from figures.data import load` and `from conftest import YEARS` resolve
+root = ["./src", "./streamlit", "./tests"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
