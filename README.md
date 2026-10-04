@@ -169,14 +169,14 @@ Further documentation: [about the data](docs/about-the-data.md), [data transform
 | **Plotly + Kaleido** | Interactive charts and static exports |
 | **Streamlit** | Interactive dashboard |
 | **Jupyter** | Exploratory and final analysis |
-| **uv / Ruff** | Environment management, linting and formatting |
+| **uv / Ruff / ty** | Environment management, linting, formatting and type checking |
 | **pytest / GitHub Actions** | Tests (100% coverage of the pipeline package) and CI on every push and pull request |
 
 ### Repository Structure
 
 ```
 benefits-market-intelligence/
-├── .github/workflows/        # CI: lint, format check and tests
+├── .github/workflows/        # CI: lint, format check, type check and tests
 ├── assets/                   # README images
 ├── data/exports/             # Gold tables as Parquet (powers the dashboard)
 ├── docs/                     # Data background, transformations, assumptions, name matching, sources, data dictionary
