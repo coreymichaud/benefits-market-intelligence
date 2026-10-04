@@ -112,8 +112,8 @@ def create_silver_table(
 
     years = range(2019, 2025)
 
-    numeric_cols = set(numeric_cols)
-    date_cols = set(date_cols)
+    numeric_set = set(numeric_cols)
+    date_set = set(date_cols)
 
     all_columns = set()
     year_columns = {}
@@ -146,11 +146,11 @@ def create_silver_table(
                 expression = f"NULL AS {quoted_column}"
 
             # Numeric column
-            elif column_name in numeric_cols:
+            elif column_name in numeric_set:
                 expression = f"TRY_CAST({quoted_column} AS DOUBLE) AS {quoted_column}"
 
             # Date column
-            elif column_name in date_cols:
+            elif column_name in date_set:
                 expression = f"TRY_CAST({quoted_column} AS DATE) AS {quoted_column}"
 
             # Everything else stays VARCHAR
@@ -180,6 +180,13 @@ def create_silver_table(
     )
 
 
+def scalar(con: duckdb.DuckDBPyConnection, query: str):
+    """Runs a query that returns a single value, like COUNT(*), and returns that value."""
+    row = con.execute(query).fetchone()
+    assert row is not None, query
+    return row[0]
+
+
 print("[STARTING] Silver transformation...")
 
 with duckdb.connect(DB_PATH) as con:
@@ -197,16 +204,17 @@ with duckdb.connect(DB_PATH) as con:
         date_cols=F_5500_DATE_COLS,
     )
 
-    f5500_rows = con.execute("SELECT COUNT(*) FROM silver.F_5500").fetchone()[0]
+    f5500_rows = scalar(con, "SELECT COUNT(*) FROM silver.F_5500")
 
-    f5500_columns = con.execute(
+    f5500_columns = scalar(
+        con,
         """
         SELECT COUNT(*)
         FROM information_schema.columns
         WHERE table_schema = 'silver'
           AND table_name = 'F_5500'
-        """
-    ).fetchone()[0]
+        """,
+    )
 
     print(f"[SUCCESSFUL] F_5500: {f5500_rows:,} rows × {f5500_columns} columns")
 
@@ -221,16 +229,17 @@ with duckdb.connect(DB_PATH) as con:
         date_cols=SCH_A_DATE_COLS,
     )
 
-    sch_a_rows = con.execute("SELECT COUNT(*) FROM silver.SCH_A").fetchone()[0]
+    sch_a_rows = scalar(con, "SELECT COUNT(*) FROM silver.SCH_A")
 
-    sch_a_columns = con.execute(
+    sch_a_columns = scalar(
+        con,
         """
         SELECT COUNT(*)
         FROM information_schema.columns
         WHERE table_schema = 'silver'
           AND table_name = 'SCH_A'
-        """
-    ).fetchone()[0]
+        """,
+    )
 
     print(f"[SUCCESSFUL] SCH_A: {sch_a_rows:,} rows × {sch_a_columns} columns")
 
@@ -245,16 +254,17 @@ with duckdb.connect(DB_PATH) as con:
         date_cols=SCH_C_P1_I2_DATE_COLS,
     )
 
-    sch_c_rows = con.execute("SELECT COUNT(*) FROM silver.SCH_C_P1_I2").fetchone()[0]
+    sch_c_rows = scalar(con, "SELECT COUNT(*) FROM silver.SCH_C_P1_I2")
 
-    sch_c_columns = con.execute(
+    sch_c_columns = scalar(
+        con,
         """
         SELECT COUNT(*)
         FROM information_schema.columns
         WHERE table_schema = 'silver'
           AND table_name = 'SCH_C_P1_I2'
-        """
-    ).fetchone()[0]
+        """,
+    )
 
     print(f"[SUCCESSFUL] SCH_C_P1_I2: {sch_c_rows:,} rows x {sch_c_columns} columns")
 

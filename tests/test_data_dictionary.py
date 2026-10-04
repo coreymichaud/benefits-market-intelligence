@@ -25,9 +25,11 @@ def script_lists(name: str) -> dict[str, list[str]]:
     """Read the column lists from a pipeline script without running it."""
     tree = ast.parse((ELT / name).read_text())
     return {
-        node.targets[0].id: ast.literal_eval(node.value)
+        target.id: ast.literal_eval(node.value)
         for node in tree.body
-        if isinstance(node, ast.Assign) and isinstance(node.value, ast.List)
+        if isinstance(node, ast.Assign)
+        and isinstance(node.value, ast.List)
+        and isinstance(target := node.targets[0], ast.Name)
     }
 
 

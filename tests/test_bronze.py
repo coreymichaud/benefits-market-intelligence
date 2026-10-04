@@ -17,8 +17,7 @@ def bronze_tables() -> dict[str, int]:
             ).fetchall()
         ]
         return {
-            n: con.execute(f'select count(*) from bronze."{n}"').fetchone()[0]
-            for n in names
+            n: len(con.execute(f'select * from bronze."{n}"').fetchall()) for n in names
         }
 
 

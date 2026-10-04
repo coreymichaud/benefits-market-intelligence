@@ -114,7 +114,9 @@ class FakeResponse:
 
 def dol_zip(url: str) -> bytes:
     """Fake DOL download for a dataset URL with one CSV and a layout file."""
-    dataset, year = re.search(r"/(F_[A-Z0-9_]+?)_(\d{4})_Latest\.zip$", url).groups()
+    match = re.search(r"/(F_[A-Z0-9_]+?)_(\d{4})_Latest\.zip$", url)
+    assert match, url
+    dataset, year = match.groups()
     year = int(year)
     return zip_bytes(
         {
