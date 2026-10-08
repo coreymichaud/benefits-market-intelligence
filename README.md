@@ -8,7 +8,7 @@ Check out the [live link here.](https://benefits-market-intelligence.streamlit.a
 
 **Data freshness:** covers form years 2019 to 2024, using every filing EFAST had received by **September 24, 2026** (the latest receipt date in the data). DOL rebuilds these files about monthly as late and amended filings arrive, so rerunning `make data` picks those up for the same six form years. It never adds 2025 or later. Form year 2024 is still filling in (see [assumptions](docs/assumptions.md#filing-window)).
 
-===
+___
 
 ## The Business Problem
 
